@@ -133,3 +133,85 @@ Will revisit if the library grows past ~10 kernels.
 **Why:** A subtle bug in the reference — wrong epsilon placement, wrong reduction dim, dtype mismatch in the intermediate — would make the Triton kernel *appear* to match the reference while both are wrong. Anchoring the reference to a widely-used PyTorch built-in makes that failure mode impossible: if the reference is buggy, layer 1 fails and we fix the reference before touching the kernel. This costs one extra test file per kernel — cheap insurance against a class of bug that's very hard to detect after the fact.
 
 ---
+
+## 2026-10-03 — Phase 2: Fused SwiGLU
+
+### Fuse the activation and the gating multiply only; leave the two linears to cuBLAS
+
+**Decision:** `swiglu(gate, up) = silu(gate) * up`. The kernel takes the outputs of `gate_proj` and `up_proj` (both ordinary `nn.Linear` calls backed by cuBLAS GEMM) and does nothing else.
+
+**Alternatives considered:**
+- "Fully fused" SwiGLU that takes `x`, `W_gate`, `W_up` and does the two matmuls plus the activation in one kernel.
+- Keep activation and multiply separate; let `torch.compile` or the user handle fusion.
+
+**Why fuse only the elementwise part:** cuBLAS/cutlass GEMM is extraordinarily hard to beat with hand-rolled Triton; NVIDIA has invested decades in tuning it. Triton GEMM wins against cuBLAS only when it can fuse the matmul with a non-trivial epilogue AND the materialization of the intermediate is expensive (the FlashAttention case). Here the intermediate (`gate`, `up`) is tiny compared to the matmul itself, and the epilogue (one sigmoid + two multiplies) is cheap. Replacing cuBLAS GEMM with hand-rolled Triton GEMM would almost certainly make the whole op slower.
+
+Leaving activation and multiply unfused and relying on `torch.compile` is a reasonable alternative, but we lose explicit control, and the point of this library is to show the hand-tuned path, not re-outsource it.
+
+---
+
+### fp32 upcast even though SwiGLU has no reduction
+
+**Decision:** Upcast `gate` and `up` to fp32 inside the kernel before applying sigmoid.
+
+**Why:** Unlike RMSNorm there's no reduction here, so there's no overflow-driven correctness requirement. The reason to upcast is sigmoid specifically: in bf16, `sigmoid(x)` for `x` near zero loses meaningful precision in the output's slope. Since SwiGLU is used in the FFN block of every forward pass and small inaccuracies compound across layers, taking the fp32 round-trip is cheap insurance. The cost is negligible — tl.sigmoid in fp32 and the final downcast at store time.
+
+---
+
+## 2026-10-03 — Phase 3: Fused RoPE (no QKV matmul)
+
+### Scope: RoPE application only; the matmul stays in cuBLAS
+
+**Decision:** The kernel takes already-projected Q, K tensors and applies RoPE. It does NOT include the `x -> xW_q, xW_k, xW_v` matmul. Roadmap bullet reworded accordingly: "Fused RoPE for Q and K (no QKV matmul; cuBLAS handles that)".
+
+**Alternatives considered:**
+- Full QKV-projection + split + RoPE in one kernel.
+- Only the "split + RoPE" part, but with the matmul fused via `torch.compile` externally.
+
+**Why:** Same GEMM reasoning as the SwiGLU decision. The matmul is the dominant cost by far (compute-bound GEMM, O(B·S·D·3D) FLOPs vs the RoPE op's O(B·H·S·D) elementwise FLOPs). Materializing Q, K and then applying RoPE is nearly free compared to the matmul; swapping cuBLAS GEMM for hand-rolled Triton GEMM to save that materialization costs more than it saves.
+
+The roadmap originally said "Fused QKV projection + RoPE" — this is the honest correction. The name "QKV + RoPE" implied fusing all three; what we're actually fusing is the RoPE step itself. Portfolio-correctness matters: better to have a kernel that does one thing well and names it accurately than claim a fusion we deliberately don't do.
+
+---
+
+### HuggingFace "rotate_half" convention, not the paper's interleaved-pairs
+
+**Decision:** Implement RoPE in the "rotate_half" convention — `rotate_half([a, b]) = [-b, a]` with `a, b` each half the vector — as HuggingFace Transformers and the LLaMA checkpoint ecosystem use.
+
+**Alternatives considered:**
+- Interleaved-pairs convention from the original RoPE paper and Meta's reference LLaMA code: pair up `(x[2i], x[2i+1])` and apply a 2D rotation per pair.
+
+**Why:** The two conventions are mathematically equivalent up to a permutation of `W_Q` and `W_K`, but no HuggingFace LLaMA checkpoint has permuted weights. Feeding a HuggingFace checkpoint into an interleaved-pairs RoPE will produce *silently wrong* attention scores — the model will not crash, it will just hallucinate differently. Since the Phase 5 goal is end-to-end integration with a LLaMA-3 HuggingFace checkpoint, matching HF's convention is mandatory, not stylistic.
+
+The DECISIONS entry notes this explicitly because the convention gap is one of the most common silent-bug sources in RoPE implementations.
+
+---
+
+### Two-layer correctness anchor via independently-written HF-style reference
+
+**Decision:** `test_rope.py` includes a from-scratch rewrite of HuggingFace's `rotate_half` and `apply_rotary_pos_emb` (deliberately NOT imported from `rope.py`), used in `test_ref_matches_independent_hf_impl`. Then the Triton kernel is tested against our `apply_rope_ref` as usual.
+
+**Why two sources:** The only PyTorch builtin for RoPE is in `transformers.models.llama.modeling_llama`, which (a) requires the `transformers` package as a dependency and (b) is a moving target as HF refactors. Writing an independent copy in the test file eliminates both problems: no dep, and a copy-paste bug cannot pass both tests because the two implementations differ in indentation, variable names, and sub-expression ordering. Same cheap-insurance argument as the RMSNorm two-layer anchor.
+
+---
+
+## 2026-10-03 — Phase 4: Online softmax
+
+### Implement the genuinely-streaming online formulation, not safe softmax dressed up
+
+**Decision:** The kernel implements the Milakov & Gimelshein online update across sub-blocks, with `BLOCK_SIZE` configurable at wrapper time and defaulting to 1024. The benchmark grid includes `N=16384` to actually exercise the online loop.
+
+**Alternatives considered:**
+- Standard safe softmax that holds the whole row in SRAM (`BLOCK_SIZE = next_power_of_2(N)`), identical in output and perf to the online version when the row fits.
+
+**Why:** The two produce the same output when the row fits; online is strictly more general. For a portfolio project, naming a kernel "online softmax" and shipping safe softmax under the name would be dishonest. Equally important, the online pattern — carrying `(m, l)` state across sub-blocks with rescaling on max-shift — is the same pattern FlashAttention uses in its softmax over attention scores. Writing it here now, standalone, builds the muscle for a future attention kernel. The small-N regime where it's slightly slower than `F.softmax` (because of two HBM passes vs the typical one-pass fused implementation) is a known tradeoff and will be visible in the benchmark results.
+
+---
+
+### Softmax has three honest baselines, and `F.softmax` is the real one to beat
+
+**Decision:** Benchmark against eager naive two-pass, `F.softmax`, and `torch.compile`. `F.softmax` is the headline — it's what any sane PyTorch user actually calls.
+
+**Why:** Same discipline as the RMSNorm three-baseline decision. Eager naive is the honest "fusion lift" number. `F.softmax` is PyTorch's own fused native path and the real competitive bar. `torch.compile` lowers to Triton, so beating it means beating our own toolchain's default codegen — reported for completeness but downweighted. Softmax is the kernel where we most expect to *not* clearly beat `F.softmax` on small `N` (the online formulation pays a second HBM pass that fused safe softmax avoids). That's fine — the honest story is that online wins when the row doesn't fit, which the `N=16384` config will demonstrate.
+
+---

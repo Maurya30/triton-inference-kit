@@ -20,10 +20,10 @@ A box is checked only once the kernel is validated on a real GPU (A100) with ben
 
 - [x] Package scaffolding + benchmark harness
 - [x] Vector addition (warm-up kernel, sanity check)
-- [ ] Fused RMSNorm — **kernel, tests, and benchmark drafted; A100 validation pending.** See [docs/rmsnorm.md](docs/rmsnorm.md).
-- [ ] Fused SwiGLU
-- [ ] Fused QKV projection + RoPE
-- [ ] Online softmax
+- [ ] Fused RMSNorm — **drafted; A100 validation pending.** [docs/rmsnorm.md](docs/rmsnorm.md)
+- [ ] Fused SwiGLU — **drafted; A100 validation pending.** [docs/swiglu.md](docs/swiglu.md)
+- [ ] Fused RoPE for Q and K (no QKV matmul; cuBLAS handles that) — **drafted; A100 validation pending.** [docs/rope.md](docs/rope.md)
+- [ ] Online softmax — **drafted; A100 validation pending.** [docs/softmax.md](docs/softmax.md)
 - [ ] Roofline analysis writeup
 - [ ] End-to-end integration test in a LLaMA-3.2 forward pass
 
@@ -63,13 +63,42 @@ out = rmsnorm(x, weight, eps=1e-6)  # fused Triton kernel, single HBM round trip
 
 The benchmark script in [benchmarks/bench_rmsnorm.py](benchmarks/bench_rmsnorm.py) compares the kernel against three baselines (PyTorch eager unfused, `torch.nn.functional.rms_norm`, and `torch.compile`) and reports achieved bandwidth as a percentage of A100 HBM peak. **Numbers will land in [docs/rmsnorm.md](docs/rmsnorm.md) after the first A100 run.**
 
+Fused SwiGLU — the gated FFN activation used by LLaMA, Mistral, Qwen, Gemma:
+
+```python
+from triton_inference_kit import swiglu
+
+# gate and up are the outputs of gate_proj and up_proj (both nn.Linear calls)
+out = swiglu(gate, up)  # silu(gate) * up, in one HBM round trip
+```
+
+Fused RoPE for Q and K (HuggingFace "rotate_half" convention):
+
+```python
+from triton_inference_kit import apply_rope
+
+# q: (batch, num_heads_q, seq_len, head_dim)
+# k: (batch, num_heads_kv, seq_len, head_dim)  — supports GQA
+# cos, sin: (batch, seq_len, head_dim), precomputed per the model's base theta
+q_rot, k_rot = apply_rope(q, k, cos, sin)
+```
+
+Online softmax — single-pass streaming softmax that generalizes to the FlashAttention regime:
+
+```python
+from triton_inference_kit import online_softmax
+
+attention_scores = ...  # (batch * heads, seq, seq)
+probs = online_softmax(attention_scores)  # softmax over the last dim
+```
+
 ## Validation
 
 Every kernel ships with:
 - **A PyTorch reference implementation** as the source of truth for correctness.
 - **A pytest suite** that runs the kernel and reference on identical random inputs across a grid of shapes and dtypes, asserting agreement via `torch.testing.assert_close` within dtype-appropriate tolerances (fp32: `1e-5`; fp16/bf16: `1e-2`).
 - **A two-layer correctness anchor** for RMSNorm onward: the PyTorch reference itself is tested against `torch.nn.functional.rms_norm`, so a buggy reference can't silently make the Triton kernel "match" while both are wrong.
-- **A benchmark script** using `triton.testing.do_bench` (correct CUDA synchronization + warm-up + median-of-many-runs), reporting latency, achieved HBM bandwidth, and speedup against multiple PyTorch baselines (eager unfused, `F.rms_norm`, `torch.compile`).
+- **A benchmark script** using `triton.testing.do_bench` (correct CUDA synchronization + warm-up + median-of-many-runs), reporting latency, achieved HBM bandwidth, and speedup against multiple PyTorch baselines — always eager unfused and `torch.compile`, plus the PyTorch native fused op where one exists (`F.rms_norm` for RMSNorm, `F.softmax` for softmax).
 
 > **Note on CI.** The test suite is gated on `torch.cuda.is_available()`. On a CPU-only runner every test is skipped and the suite exits green — this is a false signal of correctness. Real validation requires a CUDA GPU; see [the RunPod runbook](#running-on-a-rented-gpu).
 
@@ -84,6 +113,9 @@ Run a benchmark:
 ```bash
 python benchmarks/bench_vector_add.py
 python benchmarks/bench_rmsnorm.py   # chart output needs the `bench` extra
+python benchmarks/bench_swiglu.py
+python benchmarks/bench_rope.py
+python benchmarks/bench_softmax.py
 ```
 
 ## Running on a rented GPU
@@ -95,8 +127,15 @@ git clone https://github.com/Maurya30/triton-inference-kit.git
 cd triton-inference-kit
 pip install -e ".[dev,bench]"
 
-pytest tests/ -v              # all tests must execute (not skip) and pass
+pytest tests/test_rmsnorm.py -v        # run per-kernel so failures localize
+pytest tests/test_swiglu.py -v
+pytest tests/test_rope.py -v
+pytest tests/test_softmax.py -v
+
 python benchmarks/bench_rmsnorm.py --dtypes float16 bfloat16
+python benchmarks/bench_swiglu.py  --dtypes float16 bfloat16
+python benchmarks/bench_rope.py    --dtypes float16 bfloat16
+python benchmarks/bench_softmax.py --dtypes float16 bfloat16
 ```
 
 Benchmark results write to `benchmarks/results/`. Numbers from each run are then landed in [docs/rmsnorm.md](docs/rmsnorm.md) with GPU attribution.
