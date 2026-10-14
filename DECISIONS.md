@@ -259,3 +259,38 @@ The DECISIONS entry notes this explicitly because the convention gap is one of t
 **Alternatives considered:** keep per-script byte formulas and per-script JSON files (what existed); hard-code the A100 peak (breaks on any other GPU and hides where the number came from); report "min" instead of median (flatters the kernel).
 
 ---
+
+## 2026-10-13 — LLaMA end-to-end integration
+
+### Monkeypatch `modeling_llama`, do not subclass or re-implement the model
+
+**Decision:** `triton_inference_kit.llama_patch.patched_llama()` swaps `LlamaRMSNorm.forward`, `LlamaMLP.forward` and `apply_rotary_pos_emb` in `transformers.models.llama.modeling_llama` for the duration of a `with` block, counts kernel calls, and restores the originals on exit.
+
+**Alternatives considered:**
+- A custom `nn.Module` tree that mirrors LLaMA and loads HF weights.
+- Replacing module instances in the loaded model (`model.model.layers[i].mlp = OurMLP(...)`).
+
+**Why patch the module globals:** the claim being tested is "the stock model, loaded the stock way, gives the same answer with our kernels underneath". A re-implementation could be subtly different from HF for reasons unrelated to the kernels, and swapping module instances would still need `apply_rotary_pos_emb`, which is a module-level function, to be patched. Patching all three at the module level is the smallest change that reaches every call site, works for any `model_type == "llama"` checkpoint, and is trivially reversible. The call counters exist because a patch that silently fails to attach (after an HF rename, say) would otherwise pass every numerical check.
+
+---
+
+### RoPE wrapper accepts strided q/k and batch-1 cos/sin
+
+**Decision:** `apply_rope` now requires only unit stride along `head_dim` for q and k, accepts `cos`/`sin` with batch dim 1 (broadcast via a zero batch stride), and returns contiguous outputs. The Triton kernel body is unchanged; it always read q, k through explicit strides.
+
+**Why:** HuggingFace hands `apply_rotary_pos_emb` q and k as `(B, S, H, D) -> (B, H, S, D)` transposed views, and `cos`/`sin` with a batch dim of 1 whenever `position_ids` is unbatched (every plain forward). The previous `is_contiguous()` assert would have forced a `.contiguous()` copy of q and k in every layer of the patched model, which is extra HBM traffic the stock path does not pay. Reading through strides costs nothing in the kernel and removes the copy.
+
+---
+
+### End-to-end tolerance: fp32-upcast logits within `0.5 + 0.02 * |stock|`, plus 32 identical greedy tokens
+
+**Decision:** `tests/test_llama_e2e.py` asserts `torch.testing.assert_close(patched, stock, atol=0.5, rtol=0.02)` on fp32-upcast logits of a fixed prompt, and `torch.equal` on 32 greedily generated tokens.
+
+**Alternatives considered:**
+- A tighter fixed tolerance (fp16 "1e-2" style): would fail for correct kernels because 22 layers of differently-rounded fp16 arithmetic legitimately diverge by more than that at the logit level.
+- Compare against an fp32 copy of the model and require the patched fp16 model to be no further from fp32 than stock fp16 is: principled, but doubles the memory and load time of the test for a bound that is not actually stricter.
+- Only the greedy-decode check: catches gross bugs, says nothing about magnitude.
+
+**Why these numbers:** fp16's unit roundoff is ~4.9e-4. The swapped kernels round at different points than the stock ops (once at the store instead of two or three times), so each perturbs its output by a few ulps; four such ops per layer over 22 residual layers accumulate to a few percent relative in the worst case, which the final norm and lm_head carry into the logits. `rtol=0.02` on logits that reach magnitude ~30 allows ~0.6 absolute at the top end; `atol=0.5` covers logits near zero. A real bug (rotate_half sign, eps dropped, gate/up swapped) moves logits by whole units. The test prints the observed max difference and the argmax agreement so the actual margin is on record after the A100 run, and the greedy-decode check is the "does it still speak the same" guard that a magnitude bound alone cannot give.
+
+---

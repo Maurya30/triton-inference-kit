@@ -141,3 +141,55 @@ def test_rope_rejects_shape_mismatch():
     sin = torch.randn(1, 8, 64, device="cuda")
     with pytest.raises(AssertionError):
         apply_rope(q, k, cos, sin)
+
+
+# ---------------------------------------------------------------------------
+# Input contract needed by the HuggingFace integration (llama_patch.py):
+# q/k arrive as transposed views, cos/sin may have batch dim 1.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("dtype", DTYPES)
+def test_rope_accepts_transposed_views(dtype):
+    """HF builds q as (B, S, H, D).transpose(1, 2): unit stride on D only.
+    The kernel reads through the strides; the output must still be correct
+    and contiguous."""
+    B, H_q, H_kv, S, D = 2, 8, 2, 64, 64
+    torch.manual_seed(0)
+    q_bshd = torch.randn(B, S, H_q, D, device="cuda", dtype=dtype)
+    k_bshd = torch.randn(B, S, H_kv, D, device="cuda", dtype=dtype)
+    q, k = q_bshd.transpose(1, 2), k_bshd.transpose(1, 2)
+    assert not q.is_contiguous() and q.stride(-1) == 1
+    cos, sin = _make_cos_sin(B, S, D, dtype)
+
+    q_triton, k_triton = apply_rope(q, k, cos, sin)
+    q_ref, k_ref = apply_rope_ref(q.contiguous(), k.contiguous(), cos, sin)
+
+    assert q_triton.is_contiguous() and k_triton.is_contiguous()
+    torch.testing.assert_close(q_triton, q_ref, **_tol(dtype))
+    torch.testing.assert_close(k_triton, k_ref, **_tol(dtype))
+
+
+@pytest.mark.parametrize("dtype", DTYPES)
+def test_rope_broadcasts_batch1_cos_sin(dtype):
+    """HF emits cos/sin of shape (1, S, D) when position_ids is unbatched;
+    the same table must be applied to every batch element."""
+    B, H_q, H_kv, S, D = 3, 4, 2, 32, 64
+    torch.manual_seed(0)
+    q = torch.randn(B, H_q, S, D, device="cuda", dtype=dtype)
+    k = torch.randn(B, H_kv, S, D, device="cuda", dtype=dtype)
+    cos1, sin1 = _make_cos_sin(1, S, D, dtype)
+
+    q_triton, k_triton = apply_rope(q, k, cos1, sin1)
+    q_ref, k_ref = apply_rope_ref(q, k, cos1.expand(B, S, D), sin1.expand(B, S, D))
+
+    torch.testing.assert_close(q_triton, q_ref, **_tol(dtype))
+    torch.testing.assert_close(k_triton, k_ref, **_tol(dtype))
+
+
+def test_rope_rejects_cos_sin_batch_mismatch():
+    q = torch.randn(2, 4, 8, 64, device="cuda")
+    k = torch.randn(2, 2, 8, 64, device="cuda")
+    cos = torch.randn(3, 8, 64, device="cuda")   # batch 3 is neither 1 nor 2
+    sin = torch.randn(3, 8, 64, device="cuda")
+    with pytest.raises(AssertionError):
+        apply_rope(q, k, cos, sin)

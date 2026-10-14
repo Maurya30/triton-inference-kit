@@ -142,15 +142,19 @@ def apply_rope(
     along dim 1; cos/sin are broadcast over the head dim.
 
     Args:
-        q:   (batch, num_heads_q,  seq_len, head_dim), CUDA, contiguous.
-        k:   (batch, num_heads_kv, seq_len, head_dim), CUDA, contiguous.
-        cos: (batch, seq_len, head_dim), same dtype as q.
-        sin: (batch, seq_len, head_dim), same dtype as q.
+        q:   (batch, num_heads_q,  seq_len, head_dim), CUDA. Any strides as
+             long as head_dim is unit-stride, so HuggingFace's transposed
+             `(B, S, H, D) -> (B, H, S, D)` views work without a copy.
+        k:   (batch, num_heads_kv, seq_len, head_dim), CUDA, same rule.
+        cos: (batch or 1, seq_len, head_dim), same dtype as q. A batch dim
+             of 1 is broadcast over the batch (HuggingFace emits this
+             shape when position_ids is unbatched).
+        sin: same shape and strides as cos.
 
     Returns:
-        (q_rot, k_rot): rotated Q and K with the same shapes and dtypes as
-        the inputs. V (not an argument) is unchanged and the caller should
-        pass it through directly.
+        (q_rot, k_rot): rotated Q and K, contiguous, with the same shapes
+        and dtypes as the inputs. V (not an argument) is unchanged and the
+        caller should pass it through directly.
     """
     assert q.is_cuda and k.is_cuda and cos.is_cuda and sin.is_cuda, (
         "all tensors must be on CUDA"
@@ -164,7 +168,9 @@ def apply_rope(
     assert q.dtype == k.dtype == cos.dtype == sin.dtype, (
         "all tensors must share a dtype"
     )
-    assert q.is_contiguous() and k.is_contiguous(), "q and k must be contiguous"
+    assert q.stride(-1) == 1 and k.stride(-1) == 1, (
+        "q and k must be unit-stride along head_dim (other dims may be strided)"
+    )
 
     B_q, H_q, S_q, D = q.shape
     B_k, H_k, S_k, D_k = k.shape
@@ -174,12 +180,20 @@ def apply_rope(
     assert D % 2 == 0, f"head_dim must be even; got {D}"
 
     B_cs, S_cs, D_cs = cos.shape
-    assert B_cs == B_q and S_cs == S_q and D_cs == D, (
-        f"cos/sin shape mismatch: expected ({B_q}, {S_q}, {D}), got {cos.shape}"
+    assert B_cs in (1, B_q) and S_cs == S_q and D_cs == D, (
+        f"cos/sin shape mismatch: expected ({B_q} or 1, {S_q}, {D}), got {tuple(cos.shape)}"
     )
+    assert cos.shape == sin.shape and cos.stride() == sin.stride(), (
+        "cos and sin must have identical shapes and strides"
+    )
+    assert cos.stride(-1) == 1, "cos/sin must be unit-stride along head_dim"
+    # Batch-1 cos/sin broadcast over the batch: a zero batch stride makes the
+    # kernel read the same (seq, head_dim) table for every batch index.
+    cs_batch_stride = cos.stride(0) if B_cs == B_q else 0
 
-    q_out = torch.empty_like(q)
-    k_out = torch.empty_like(k)
+    # Outputs are always contiguous (B, H, S, D), whatever the input strides.
+    q_out = torch.empty_like(q, memory_format=torch.contiguous_format)
+    k_out = torch.empty_like(k, memory_format=torch.contiguous_format)
 
     BLOCK_SIZE = triton.next_power_of_2(D)
     HALF_DIM = D // 2
@@ -189,7 +203,7 @@ def apply_rope(
         _rope_kernel[grid](
             x, cos, sin, out,
             x.stride(0), x.stride(1), x.stride(2),
-            cos.stride(0), cos.stride(1),
+            cs_batch_stride, cos.stride(1),
             out.stride(0), out.stride(1), out.stride(2),
             B_q, H, S_q,
             HEAD_DIM=D,
