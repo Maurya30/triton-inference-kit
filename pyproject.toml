@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "ninja>=1.10"]   # ninja: required by torch.utils.cpp_extension.load for the CUDA kernel
 bench = ["matplotlib>=3.7"]
 
 [project.urls]
@@ -24,3 +24,8 @@ Repository = "https://github.com/Maurya30/triton-inference-kit"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/triton_inference_kit"]
+
+# Ship the CUDA sources inside the wheel so rmsnorm_cuda can JIT-build them
+# from a non-editable install too (the wrapper looks in both locations).
+[tool.hatch.build.targets.wheel.force-include]
+"csrc" = "triton_inference_kit/csrc"

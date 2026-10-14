@@ -215,3 +215,22 @@ The DECISIONS entry notes this explicitly because the convention gap is one of t
 **Why:** Same discipline as the RMSNorm three-baseline decision. Eager naive is the honest "fusion lift" number. `F.softmax` is PyTorch's own fused native path and the real competitive bar. `torch.compile` lowers to Triton, so beating it means beating our own toolchain's default codegen — reported for completeness but downweighted. Softmax is the kernel where we most expect to *not* clearly beat `F.softmax` on small `N` (the online formulation pays a second HBM pass that fused safe softmax avoids). That's fine — the honest story is that online wins when the row doesn't fit, which the `N=16384` config will demonstrate.
 
 ---
+## 2026-10-13 — CUDA C++ RMSNorm port
+
+### A second RMSNorm, in CUDA C++, next to the Triton one
+
+**Decision:** Add `csrc/rmsnorm.cu` + `rmsnorm_cuda(x, weight, eps)` as a hand-written CUDA C++ port of the Triton kernel, JIT-built through `torch.utils.cpp_extension.load` on first call. The Triton kernel stays the default.
+
+**Alternatives considered:**
+- Triton only (the original scaffolding decision).
+- Build the extension ahead of time with `setup.py` / `CUDAExtension`.
+
+**Why a port at all:** The Triton kernel hides exactly the things an interviewer asks about: which thread reads which bytes, how `tl.sum` crosses warps, whether loads are vectorized. Writing the same op by hand (one block per row, `float4` loads with a scalar tail and an unaligned fallback, `__shfl_down_sync` warp reduction, shared-memory cross-warp stage, broadcast rsqrt) makes every one of those explicit and gives the benchmark a second hand-written data point. `docs/cuda_rmsnorm.md` is written as the study guide for it.
+
+**Why JIT, lazy, cached:** `cpp_extension.load` compiles on first use and caches the build by source hash under `~/.cache/torch_extensions`, so importing the package stays free, CPU-only machines can still import and run the skip-gated tests, and the second process on a GPU box does not recompile. An ahead-of-time build would force every `pip install -e .` through nvcc, including on this Mac.
+
+**Vector width:** 16 bytes per thread per load for every dtype (`VEC = 8` for fp16/bf16, `4` for fp32), not a fixed 4 elements. 16 bytes is the widest load a thread can issue and what `float4` means at the instruction level; a 4-element pack would make fp16 loads 8 bytes wide for no reason. The tail is `N % VEC` elements.
+
+**Alignment handled per block, not per launch:** rows of a contiguous `(M, N)` tensor are 16-byte aligned for every row only when `N * sizeof(T) % 16 == 0`, and a view with a storage offset breaks even the base pointer. Each block checks its own three pointers and takes the vectorized or the scalar path; the branch is block-uniform so it cannot diverge. The alternative (reject misaligned inputs, or pick one path per launch on the host) either errors on legal tensors or forces every row scalar when only some are misaligned.
+
+---
