@@ -17,8 +17,10 @@ sub-blocks:
         m, l = m_new, l_new
 
 A final second pass is still needed to emit each output element
-`y[i] = exp(x[i] - m_final) / l_final`, so this kernel is 2 HBM passes
-over x, not 1. The win is NOT fewer passes — it's that each sub-block
+`y[i] = exp(x[i] - m_final) / l_final`, so this kernel reads each row
+twice, not once (the second read of a just-read row is normally an L2
+hit, so HBM sees one read and one write). The win is NOT fewer passes —
+it's that each sub-block
 only needs enough SRAM for the sub-block, not for the whole row. For
 rows that fit entirely in one tile (BLOCK_SIZE >= N), online and safe
 softmax are indistinguishable; for rows larger than SRAM, online works

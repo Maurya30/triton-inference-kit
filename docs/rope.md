@@ -76,21 +76,29 @@ flowchart LR
   the `rotate_half` term. Second load is an L1/L2 hit — same row.
 - Q and K are processed via two separate launches of the same kernel. GQA
   (num_heads_q != num_heads_kv) is handled by the launch grids.
+- Inputs are read through explicit strides, so HuggingFace's transposed
+  `(B, S, H, D) -> (B, H, S, D)` views work without a copy, and a `cos`/`sin`
+  batch dim of 1 is broadcast with a zero batch stride. Outputs are always
+  contiguous.
 
-## 5. Benchmark plan
+## 5. Benchmark
 
-Configurations:
+`benchmarks/bench_rope.py`. Configurations (q alone is 64 to 128 MiB in fp16):
 
-| config         | B | H_q | H_kv | S    | D   |
-|----------------|---|-----|------|------|-----|
-| LLaMA-2 7B MHA | 1 | 32  | 32   | 2048 | 128 |
-| LLaMA-3 8B GQA | 1 | 32  | 8    | 2048 | 128 |
-| LLaMA-3 8B GQA | 1 | 32  | 8    | 4096 | 128 |
-| LLaMA-3 70B GQA| 1 | 64  | 8    | 2048 | 128 |
+| config          | B | H_q | H_kv | S    | D   |
+|-----------------|---|-----|------|------|-----|
+| LLaMA-2 7B MHA  | 1 | 32  | 32   | 8192 | 128 |
+| LLaMA-3 8B GQA  | 1 | 32  | 8    | 8192 | 128 |
+| LLaMA-3 70B GQA | 1 | 64  | 8    | 8192 | 128 |
+| LLaMA-3 8B GQA  | 8 | 32  | 8    | 2048 | 128 |
 
-Baselines: eager (`apply_rope_ref`), `torch.compile(apply_rope_ref)`.
+Baselines: eager (`apply_rope_ref`), `torch.compile(apply_rope_ref)`. Bytes
+per call: read q, k, cos, sin once, write both outputs once. Median of
+`do_bench`, L2 flushed before each timed call.
 
-Results and chart land here after the first A100 run.
+<!-- RESULTS:START -->
+_pending A100 run. Filled from the newest `results/*.json` by `scripts/update_docs.py`._
+<!-- RESULTS:END -->
 
 ## 6. Lesson learned
 

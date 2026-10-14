@@ -71,7 +71,7 @@ Compare the pre-autotune and post-autotune numbers side by side in
 `docs/rmsnorm.md`. The delta is a real portfolio-quality data point:
 "autotune bought me X GB/s / Y% of peak on this shape".
 
-If the achieved BW is not in the 1.6–1.8 TB/s band (80–90% of A100 peak) on
-LLaMA-shaped configs after autotune, tuning is not done. The next lever to
-explore is manually splitting the row across programs (persistent kernel
-pattern) — but that's a v2 optimization if v1 already hits the target.
+If the measured % of peak on LLaMA-shaped configs is still well below the
+CUDA port's or `F.rms_norm`'s after autotune, tuning is not done. The next
+lever to explore is manually splitting the row across programs (persistent
+kernel pattern) — a v2 optimization only if v1 leaves a clear gap.

@@ -81,23 +81,27 @@ flowchart LR
 - Each program iterates over its row in `BLOCK_SIZE` sub-blocks, twice.
 - fp32 accumulators for `(m, l)` — the exponentiation is where
   low-precision bites hardest.
-- The two-pass structure means this kernel moves `x` through HBM twice
-  per call. That's one more pass than a safe-softmax kernel that holds
-  the full row in SRAM, so for small `N` this will be slightly slower
-  than `F.softmax`. The point stands: online wins when the row doesn't
-  fit, and the benchmark will show both regimes.
+- The two-pass structure means this kernel reads each row twice. For the
+  row sizes here the second read of a row that was just read is served
+  from L2, so the HBM traffic is one read plus one write, the same as a
+  single-pass kernel; the extra cost is L2 bandwidth and instructions,
+  which a safe-softmax kernel that holds the row in SRAM does not pay.
+  The benchmark counts `2 * M * N * sizeof(dtype)` for every column and
+  shows both regimes (rows that fit one block, rows that do not).
 
-## 4. Benchmark plan
+## 4. Benchmark
 
-Shapes: `(M, N)` for `(32, 512)`, `(32, 2048)`, `(32, 4096)`,
-`(32, 16384)`, `(128, 4096)`. The `N=16384` row exercises the online
-loop meaningfully — expected to be where the Triton kernel pulls away
-from naive eager softmax (which can't hold the row in SRAM either and
-pays the materialization cost explicitly through HBM).
+`benchmarks/bench_softmax.py`. Shapes `(M, N)`: `(32768, 1024)`,
+`(16384, 2048)`, `(8192, 4096)`, `(2048, 16384)`, `(4096, 32768)`; every
+tensor is at least 64 MiB in fp16. The last two make the online loop
+iterate 16 and 32 sub-blocks per pass.
 
-Baselines: eager naive two-pass, `F.softmax`, `torch.compile`.
+Baselines: eager naive two-pass, `F.softmax`, `torch.compile`. Median of
+`do_bench`, L2 flushed before each timed call.
 
-Results and chart land here after the first A100 run.
+<!-- RESULTS:START -->
+_pending A100 run. Filled from the newest `results/*.json` by `scripts/update_docs.py`._
+<!-- RESULTS:END -->
 
 ## 5. Lesson learned
 

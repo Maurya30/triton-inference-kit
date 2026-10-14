@@ -55,7 +55,9 @@ Total: ~5 traversals (or ~4 if silu is in-place). Fused:
 
 1. Read `gate` + read `up`, compute, write out. (3 traversals.)
 
-Expected ~1.3-1.5× speedup from HBM traffic reduction alone.
+The benchmark counts those 3 traversals (`3 * numel * sizeof(dtype)`) for
+every implementation, so the eager column's "effective GB/s" shows the cost
+of the extra passes directly.
 
 ## 4. Kernel design
 
@@ -67,13 +69,17 @@ meaningful precision in bf16 near zero (where its slope is steepest).
 Trivially memory-bound; `BLOCK_SIZE = 1024` is a reasonable starting
 tile. Autotune will come after v1 passes.
 
-## 5. Benchmark plan
+## 5. Benchmark
 
-Shapes: `(2048, 4096)`, `(2048, 11008)`, `(2048, 13824)`, `(2048, 28672)`.
-Dtypes: fp16, bf16.
-Baselines: eager unfused (`F.silu(gate) * up`), `torch.compile`.
+`benchmarks/bench_swiglu.py`. Shapes: `(8192, 4096)`, `(8192, 11008)`,
+`(8192, 13824)`, `(8192, 28672)` (LLaMA-2 7B / 13B / 70B intermediate
+sizes), fp16 and bf16; every tensor is at least 64 MiB. Baselines: eager
+unfused (`F.silu(gate) * up`), `torch.compile`. Median of `do_bench`, L2
+flushed before each timed call.
 
-Results and chart will land here after the first A100 run.
+<!-- RESULTS:START -->
+_pending A100 run. Filled from the newest `results/*.json` by `scripts/update_docs.py`._
+<!-- RESULTS:END -->
 
 ## 6. Lesson learned
 

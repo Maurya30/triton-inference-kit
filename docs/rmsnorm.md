@@ -7,7 +7,8 @@
 
 RMSNorm is the per-token normalization used by every modern open-weights LLM
 (LLaMA, Mistral, Qwen, Gemma). This kernel fuses the entire operation into one
-HBM round trip per row, targeting 80–90% of A100 HBM peak (~1.6–1.8 TB/s).
+HBM round trip per row. A CUDA C++ port of the same kernel, written out at the
+instruction level, is in [cuda_rmsnorm.md](cuda_rmsnorm.md).
 
 ## 1. Math
 
@@ -89,26 +90,30 @@ If a test in the first group fails, we fix the reference. If a test in the
 second group fails (while the first passes), the bug is in the Triton kernel.
 The split gives us localized diagnostics for free.
 
-## 4. Benchmark plan
+## 4. Benchmark
 
-Configuration planned for the first run: `M = 4096` rows,
-`N ∈ {1024, 2048, 4096, 5120, 8192}`, fp16 and bf16, A100 80GB SXM.
+`benchmarks/bench_rmsnorm.py`: `M = 16384` rows, `N ∈ {1024, 2048, 4096,
+5120, 8192}`, fp16 and bf16 (fp32 optional). Every tensor is at least 32 MiB
+and `do_bench` flushes L2 before each timed call, so no number is a cache
+hit. Median of `do_bench`; bytes per call counted as read x + write y + read
+weight once, and the same count applied to every column.
 
-Baselines:
+Columns:
 
-1. **PyTorch eager unfused** — the naive
+1. **Triton** (this kernel) and **CUDA C++** (the port in
+   [cuda_rmsnorm.md](cuda_rmsnorm.md)).
+2. **PyTorch eager unfused** — the naive
    `x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + eps) * weight`.
    This is the "what fusion buys you" honest number.
-2. **`torch.nn.functional.rms_norm`** — PyTorch's built-in fused path.
-   Apples-to-apples ceiling for a framework-provided op.
-3. **`torch.compile`** — reported for completeness only. `torch.compile`
+3. **`torch.nn.functional.rms_norm`** — PyTorch's built-in fused path.
+   Apples-to-apples comparison for a framework-provided op.
+4. **`torch.compile`** — reported for completeness only. `torch.compile`
    itself lowers to Triton; matching it is expected, exceeding it is where
    hand-tuning starts to earn its keep. See `DECISIONS.md`.
 
-**Benchmark results and the bandwidth chart will be inserted here after the
-first A100 run.** No stub table or placeholder image — once numbers exist
-they go here with full GPU attribution, and the roadmap bullet in the README
-flips to `[x]`.
+<!-- RESULTS:START -->
+_pending A100 run. Filled from the newest `results/*.json` by `scripts/update_docs.py`._
+<!-- RESULTS:END -->
 
 ## 5. Roofline analysis
 
@@ -116,10 +121,11 @@ RMSNorm is textbook memory-bound.
 
 **Bytes moved per row** (fp16 input, fp16 output):
 - Read x: `N * 2` bytes
-- Read weight: `N * 2` bytes (but broadcast/cached across rows — see caveat below)
 - Write y: `N * 2` bytes
-- **Total per row (row 1):** `6 * N` bytes.
-- **Total per row (rows 2..M):** `4 * N` bytes if weight stays L2-resident.
+- Read weight: `N * 2` bytes, once per call: the first programs pull it from
+  HBM, every later program hits it in L2.
+- **Total per call:** `2 * M * N * 2 + N * 2` bytes. This is the count the
+  benchmark uses.
 
 **FLOPs per row:** `N` squares + `N` sums (reduction) + `2N` scales ≈ `4N`.
 
@@ -127,9 +133,11 @@ RMSNorm is textbook memory-bound.
 
 The A100's balance point (peak-compute / peak-BW) is roughly `19.5 TFLOPS / 2.0 TB/s ≈ 10 FLOPs/byte`. We're at 1 FLOP/byte, an order of magnitude below the balance point — decisively memory-bound. **Wall-clock is dominated by HBM traffic; the FLOPs are free.**
 
-**Target achieved bandwidth as % of A100 HBM peak (2.0 TB/s): 80–90%.** The
-actual number lands here after the first run; "we targeted X and achieved Y"
-is the whole point of the roofline exercise.
+The benchmark reports the achieved fraction of the device's peak (A100 80GB
+SXM: 2039 GB/s, derived from memory clock × bus width). The roofline floor
+for a call is simply `bytes / peak`; the gap between that and the measured
+time is what the autotune pass and the follow-ups in `cuda_rmsnorm.md` go
+after.
 
 ## 6. Lesson learned
 

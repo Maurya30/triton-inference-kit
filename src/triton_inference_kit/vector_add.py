@@ -6,7 +6,7 @@ known-correct reference for the benchmark harness. It is NOT a serious
 optimization target — vector add is trivially memory-bound and PyTorch's
 default is already near optimal.
 
-Real kernels (RMSNorm, SwiGLU, QKV+RoPE, online softmax) ship in this
+Real kernels (RMSNorm, SwiGLU, RoPE, online softmax) ship in this
 package as they land.
 """
 
