@@ -234,3 +234,28 @@ The DECISIONS entry notes this explicitly because the convention gap is one of t
 **Alignment handled per block, not per launch:** rows of a contiguous `(M, N)` tensor are 16-byte aligned for every row only when `N * sizeof(T) % 16 == 0`, and a view with a storage offset breaks even the base pointer. Each block checks its own three pointers and takes the vectorized or the scalar path; the branch is block-uniform so it cannot diverge. The alternative (reject misaligned inputs, or pick one path per launch on the host) either errors on legal tensors or forces every row scalar when only some are misaligned.
 
 ---
+
+## 2026-10-13 — Benchmark methodology
+
+### Correction: `do_bench` already flushes L2 between timed calls
+
+**What the 2026-07-03 "L2-cache-reuse benchmarking caveat" entry got wrong:** it says that after the first iteration the weight vector and part of the input stay L2-resident and inflate the reported GB/s. That is not how `triton.testing.do_bench` works. Before every timed call it zeroes a 256 MB scratch buffer precisely to evict everything from L2 (the `cache.zero_()` / `clear_cache` step in `triton/testing.py`), so each sample is a cold-L2 call. The caveat entry is kept above as written; this entry supersedes it.
+
+**What is still true:** within a single call the weight is read from HBM by the first blocks and from L2 by the rest, which is exactly what happens in a real forward pass. The byte count below reflects that.
+
+---
+
+### Median of `do_bench`, minimal-bytes convention, detected peak
+
+**Decision:** Every benchmark script goes through `benchmarks/_common.py`:
+
+- `do_bench(..., return_mode="median")`. The default return mode is the mean, which a single slow sample (clock ramp, another process) can skew.
+- Shapes are sized so every tensor on its own exceeds A100 L2 (40 MB) by a comfortable margin, on top of the flush. This also moves the numbers out of the launch-latency regime, where a 4 KB kernel "achieves" a few GB/s and says nothing about the kernel.
+- Bytes per call are the fused op's minimum HBM traffic (each input read once, each output written once) and the **same count is used for every implementation**. The eager unfused baseline really moves several times more; dividing its time into the same byte count is what puts it on the same roofline axis. RMSNorm counts the weight once per call, not once per row (the previous script did the latter, overstating every number by up to 50%). Softmax counts the input once even though the online kernel re-reads each row from L2.
+- Peak bandwidth is derived from the device's memory clock and bus width (`2 x clock x width`), which reproduces the spec-sheet figures (A100 80GB SXM 2039 GB/s, H100 SXM 3352 GB/s), with `--peak-gbps` as the override and the source recorded in the JSON.
+- `torch._dynamo.reset()` before every `torch.compile` so the recompile cache limit (8 variants per function by default) cannot silently turn the compile column into eager partway through the sweep.
+- Every script writes into one `results/<gpu>_<date>.json` with GPU name, driver, CUDA, torch and triton versions, next to the rows. `scripts/update_docs.py` is the only path from that file into README and docs; nothing is typed by hand.
+
+**Alternatives considered:** keep per-script byte formulas and per-script JSON files (what existed); hard-code the A100 peak (breaks on any other GPU and hides where the number came from); report "min" instead of median (flatters the kernel).
+
+---
