@@ -370,5 +370,5 @@ and legibility of exactly those decisions.
 ## 10. Results
 
 <!-- RESULTS:START -->
-_pending A100 run. `scripts/run_a100.sh` fills this table from the newest `results/*.json` via `scripts/update_docs.py`._
+_pending A100 run. `scripts/run_a100.sh` fills this table from the newest `benchmarks/results/*.json` via `scripts/update_docs.py`._
 <!-- RESULTS:END -->

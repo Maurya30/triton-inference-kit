@@ -100,7 +100,7 @@ Baselines: eager naive two-pass, `F.softmax`, `torch.compile`. Median of
 `do_bench`, L2 flushed before each timed call.
 
 <!-- RESULTS:START -->
-_pending A100 run. Filled from the newest `results/*.json` by `scripts/update_docs.py`._
+_pending A100 run. Filled from the newest `benchmarks/results/*.json` by `scripts/update_docs.py`._
 <!-- RESULTS:END -->
 
 ## 5. Lesson learned

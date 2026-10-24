@@ -133,7 +133,7 @@ def results():
 
     meta = {
         "gpu": torch.cuda.get_device_name(),
-        "date": datetime.date.today().isoformat(),
+        "date": os.environ.get("TIK_RUN_DATE") or datetime.date.today().isoformat(),
         "torch": torch.__version__,
         "cuda": torch.version.cuda,
         "triton": triton.__version__,

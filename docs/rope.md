@@ -97,7 +97,7 @@ per call: read q, k, cos, sin once, write both outputs once. Median of
 `do_bench`, L2 flushed before each timed call.
 
 <!-- RESULTS:START -->
-_pending A100 run. Filled from the newest `results/*.json` by `scripts/update_docs.py`._
+_pending A100 run. Filled from the newest `benchmarks/results/*.json` by `scripts/update_docs.py`._
 <!-- RESULTS:END -->
 
 ## 6. Lesson learned

@@ -32,9 +32,13 @@ torch.compile baseline
     cache is reset before every compile.
 
 Results
-    Every script writes into one file, `results/<gpu>_<date>.json`, under
-    its own key, next to run metadata (GPU, driver, CUDA, torch, triton,
-    peak). `scripts/update_docs.py` renders that file into README and docs.
+    Every script writes into one file, `benchmarks/results/<gpu>_<date>.json`,
+    under its own key, next to run metadata (GPU, driver, CUDA, torch,
+    triton, peak). Each row holds latency, effective GB/s and % of peak for
+    every implementation, plus this kit's speedup over each of the others.
+    The date is $TIK_RUN_DATE when scripts/run_a100.sh sets it, so a run
+    that crosses midnight still writes one file. `scripts/update_docs.py`
+    renders that file into README and docs.
 """
 
 from __future__ import annotations
@@ -42,6 +46,7 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
+import os
 import platform
 import re
 import subprocess
@@ -50,7 +55,7 @@ from pathlib import Path
 import torch
 import triton
 
-RESULTS_DIR = Path(__file__).resolve().parents[1] / "results"
+RESULTS_DIR = Path(__file__).resolve().parent / "results"
 
 DTYPE_MAP = {
     "float16": torch.float16,
@@ -172,7 +177,7 @@ def run_metadata(peak_gbps: float, peak_source: str) -> dict:
         "torch": torch.__version__,
         "triton": triton.__version__,
         "python": platform.python_version(),
-        "date": _dt.date.today().isoformat(),
+        "date": os.environ.get("TIK_RUN_DATE") or _dt.date.today().isoformat(),
         "peak_gbps": peak_gbps,
         "peak_source": peak_source,
         "timing": "triton.testing.do_bench median; L2 flushed before each timed call",
@@ -193,6 +198,7 @@ def run_shape(label: str, fields: dict, dtype: torch.dtype, nbytes: int, bytes_m
         ms = bench_ms(fn)
         gbps = nbytes / (ms * 1e-3) / 1e9
         timed[name] = {"ms": ms, "gbps": gbps, "pct_peak": 100.0 * gbps / peak_gbps}
+    ours = next(iter(timed))
     return {
         "label": label,
         **fields,
@@ -200,6 +206,8 @@ def run_shape(label: str, fields: dict, dtype: torch.dtype, nbytes: int, bytes_m
         "bytes": nbytes,
         "bytes_model": bytes_model,
         "variants": timed,
+        # Latency of each other implementation over ours: > 1 means ours is faster.
+        "speedup_vs": {name: v["ms"] / timed[ours]["ms"] for name, v in timed.items() if name != ours},
     }
 
 

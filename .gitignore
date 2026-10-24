@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Benchmark/test logs from scripts/run_a100.sh are results: keep them (overrides *.log above)
+!benchmarks/results/**/*.log

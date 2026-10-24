@@ -1,6 +1,9 @@
 """
 End-to-end benchmark: a HuggingFace LLaMA-architecture model, stock versus
-patched with this kit's kernels (RMSNorm, SwiGLU, RoPE).
+patched with this kit's kernels (RMSNorm, SwiGLU, RoPE). The model runs with
+its default attention (SDPA), which fuses the softmax into the attention
+kernel, so the online softmax is not part of this benchmark; it is covered
+end to end by tests/test_e2e_llama.py under eager attention.
 
 Reports, per variant:
   * prefill tokens/s: one forward over a prompt of --prompt-len tokens.
@@ -18,10 +21,12 @@ dominated by the cuBLAS GEMMs. The three ops this kit replaces are a small
 fraction of a layer's bytes and FLOPs, so the patched/stock ratio measures
 what those ops cost in the stock implementation, not a model-wide claim.
 
-Model: $MODEL (default TinyLlama/TinyLlama-1.1B-Chat-v1.0), fp16. Results
-are appended to the same results/<gpu>_<date>.json as the kernel
-benchmarks under the "e2e" key.
+Model: $MODEL (default TinyLlama/TinyLlama-1.1B-Chat-v1.0), loaded once per
+--dtypes entry (default float16). Results go into the same
+benchmarks/results/<gpu>_<date>.json as the kernel benchmarks, one row per
+dtype under the "e2e" key.
 
+    python benchmarks/bench_e2e.py --dtypes float16 bfloat16
     MODEL=meta-llama/Llama-3.2-1B python benchmarks/bench_e2e.py
 """
 
@@ -31,7 +36,7 @@ import statistics
 
 import torch
 
-from _common import require_cuda, resolve_peak_gbps, run_metadata, save_section
+from _common import DTYPE_MAP, require_cuda, resolve_peak_gbps, run_metadata, save_section
 from triton_inference_kit.llama_patch import assert_llama_architecture, patched_llama
 
 DEFAULT_MODEL = os.environ.get("MODEL", "TinyLlama/TinyLlama-1.1B-Chat-v1.0")
@@ -92,6 +97,7 @@ def print_table(variants: dict) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--model", default=DEFAULT_MODEL, help="HF model id or path (or set $MODEL).")
+    parser.add_argument("--dtypes", nargs="+", default=["float16"], choices=["float16", "bfloat16"])
     parser.add_argument("--batch", type=int, default=1)
     parser.add_argument("--prompt-len", type=int, default=512)
     parser.add_argument("--new-tokens", type=int, default=128)
@@ -113,47 +119,52 @@ def main() -> None:
     print(f"GPU: {meta['gpu']} | driver {meta['driver']} | CUDA {meta['cuda']} | "
           f"torch {meta['torch']} | triton {meta['triton']}")
 
-    print(f"Loading {args.model} in fp16 ...")
-    model = AutoModelForCausalLM.from_pretrained(args.model, torch_dtype=torch.float16).to("cuda").eval()
-    assert_llama_architecture(model)
-    eos_id = model.config.eos_token_id
-    if isinstance(eos_id, (list, tuple)):
-        eos_id = eos_id[0]
-
-    # Random token ids are fine for a throughput measurement: the work per
-    # token does not depend on which tokens they are.
-    torch.manual_seed(0)
-    input_ids = torch.randint(0, model.config.vocab_size, (args.batch, args.prompt_len), device="cuda")
-    attention_mask = torch.ones_like(input_ids)
-
-    variants = {}
-    print("stock ...")
-    variants["stock"] = measure(model, input_ids, attention_mask, args.new_tokens, args.iters, eos_id)
     impls = ["triton", "cuda"] if args.rmsnorm == "both" else [args.rmsnorm]
-    for impl in impls:
-        name = f"patched (rmsnorm={impl})"
-        print(f"{name} ...")
-        with patched_llama(rmsnorm_impl=impl) as stats:
-            variants[name] = measure(model, input_ids, attention_mask, args.new_tokens, args.iters, eos_id)
-        variants[name]["kernel_calls"] = dict(stats.calls)
+    rows = []
+    for dtype_str in args.dtypes:
+        print(f"Loading {args.model} in {dtype_str} ...")
+        model = AutoModelForCausalLM.from_pretrained(args.model, dtype=DTYPE_MAP[dtype_str]).to("cuda").eval()
+        assert_llama_architecture(model)
+        eos_id = model.config.eos_token_id
+        if isinstance(eos_id, (list, tuple)):
+            eos_id = eos_id[0]
 
-    print(f"\n=== e2e: {args.model}, fp16, batch={args.batch}, prompt_len={args.prompt_len}, "
-          f"new_tokens={args.new_tokens}, median of {args.iters} ===")
-    print_table(variants)
+        # Random token ids are fine for a throughput measurement: the work per
+        # token does not depend on which tokens they are.
+        torch.manual_seed(0)
+        input_ids = torch.randint(0, model.config.vocab_size, (args.batch, args.prompt_len), device="cuda")
+        attention_mask = torch.ones_like(input_ids)
 
-    row = {
-        "label": args.model,
-        "model": args.model,
-        "dtype": "float16",
-        "batch": args.batch,
-        "prompt_len": args.prompt_len,
-        "new_tokens": args.new_tokens,
-        "iters": args.iters,
-        "transformers": __import__("transformers").__version__,
-        "variants": variants,
-    }
+        variants = {}
+        print("stock ...")
+        variants["stock"] = measure(model, input_ids, attention_mask, args.new_tokens, args.iters, eos_id)
+        for impl in impls:
+            name = f"patched (rmsnorm={impl})"
+            print(f"{name} ...")
+            with patched_llama(rmsnorm_impl=impl) as stats:
+                variants[name] = measure(model, input_ids, attention_mask, args.new_tokens, args.iters, eos_id)
+            variants[name]["kernel_calls"] = dict(stats.calls)
+
+        print(f"\n=== e2e: {args.model}, {dtype_str}, batch={args.batch}, prompt_len={args.prompt_len}, "
+              f"new_tokens={args.new_tokens}, median of {args.iters} ===")
+        print_table(variants)
+
+        rows.append({
+            "label": f"{args.model} {dtype_str}",
+            "model": args.model,
+            "dtype": dtype_str,
+            "batch": args.batch,
+            "prompt_len": args.prompt_len,
+            "new_tokens": args.new_tokens,
+            "iters": args.iters,
+            "transformers": __import__("transformers").__version__,
+            "variants": variants,
+        })
+        del model
+        torch.cuda.empty_cache()
+
     kwargs = {"results_dir": args.results_dir} if args.results_dir else {}
-    save_section("e2e", [row], meta, **kwargs)
+    save_section("e2e", rows, meta, **kwargs)
 
 
 if __name__ == "__main__":

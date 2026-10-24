@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Fill the `<!-- RESULTS:START --> ... <!-- RESULTS:END -->` blocks in README.md
-and docs/*.md from the newest `results/<gpu>_<date>.json` written by the
+and docs/*.md from the newest `benchmarks/results/<gpu>_<date>.json` written by the
 benchmark scripts.
 
 Standard library only, so it runs anywhere, including a laptop after copying
@@ -10,8 +10,8 @@ file reproduces the same text. Nothing outside the marker blocks is touched,
 and the roadmap checkboxes are deliberately left alone: flipping those is a
 human decision after reading the numbers.
 
-    python scripts/update_docs.py                      # newest results/*.json
-    python scripts/update_docs.py --results results/A100-SXM4-80GB_2026-10-14.json
+    python scripts/update_docs.py                      # newest benchmarks/results/*.json
+    python scripts/update_docs.py --results benchmarks/results/A100-SXM4-80GB_2026-10-14.json
     python scripts/update_docs.py --dry-run            # print the blocks, write nothing
 """
 
@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-RESULTS_DIR = ROOT / "results"
+RESULTS_DIR = ROOT / "benchmarks" / "results"
 START = "<!-- RESULTS:START -->"
 END = "<!-- RESULTS:END -->"
 
@@ -204,7 +204,7 @@ def splice(text: str, block: str, path: Path) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--results", type=Path, default=None, help="Results JSON (default: newest in results/).")
+    parser.add_argument("--results", type=Path, default=None, help="Results JSON (default: newest in benchmarks/results/).")
     parser.add_argument("--results-dir", type=Path, default=RESULTS_DIR)
     parser.add_argument("--root", type=Path, default=ROOT, help="Repo root containing README.md and docs/.")
     parser.add_argument("--dry-run", action="store_true", help="Print the rendered blocks; write nothing.")

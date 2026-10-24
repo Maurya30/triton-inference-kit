@@ -13,12 +13,12 @@ PyTorch ships general-purpose kernels that handle every shape and dtype. For LLM
 ## Results
 
 <!-- RESULTS:START -->
-_pending A100 run. `scripts/run_a100.sh` runs every test and benchmark and fills this table (and the per-kernel tables in `docs/`) from `results/<gpu>_<date>.json` via `scripts/update_docs.py`. No number in this repo is typed by hand._
+_pending A100 run. `scripts/run_a100.sh` runs every test and benchmark and fills this table (and the per-kernel tables in `docs/`) from `benchmarks/results/<gpu>_<date>.json` via `scripts/update_docs.py`. No number in this repo is typed by hand._
 <!-- RESULTS:END -->
 
 ## Roadmap
 
-A box is checked only once the item has run on a real GPU with the results landed in `results/` and the tables above. Everything marked *drafted* exists on disk, compiles syntactically, and has been reviewed, but has not executed on CUDA.
+A box is checked only once the item has run on a real GPU with the results landed in `benchmarks/results/` and the tables above. Everything marked *drafted* exists on disk, compiles syntactically, and has been reviewed, but has not executed on CUDA.
 
 - [x] Package scaffolding + benchmark harness
 - [x] Vector addition (warm-up kernel, sanity check)
@@ -122,15 +122,15 @@ All benchmark scripts share one methodology (`benchmarks/_common.py`):
 - Bytes per call are the fused op's **minimum HBM traffic** (inputs read once, outputs written once), stated per kernel in the script and in the results JSON, and the same count is applied to every implementation. Achieved GB/s is therefore effective bandwidth on a shared roofline axis.
 - **Peak bandwidth** is derived from the device's memory clock and bus width (A100 80GB SXM: 2039 GB/s), overridable with `--peak-gbps`; the source is recorded.
 - Baselines: PyTorch eager unfused, the native fused op where one exists (`F.rms_norm`, `F.softmax`), `torch.compile` (with a dynamo cache reset per shape so it never silently falls back to eager), and for RMSNorm the CUDA C++ port.
-- Results go to `results/<gpu>_<date>.json` with GPU name, driver, CUDA, torch and triton versions; charts land next to it.
+- Results go to `benchmarks/results/<gpu>_<date>.json`: per implementation the median latency, effective GB/s and % of peak, the kernel's speedup over each baseline, and the GPU name, driver, CUDA, torch and triton versions. Charts land next to it.
 
 ```bash
 python benchmarks/bench_rmsnorm.py --dtypes float16 bfloat16
 python benchmarks/bench_swiglu.py  --dtypes float16 bfloat16
 python benchmarks/bench_rope.py    --dtypes float16 bfloat16
 python benchmarks/bench_softmax.py --dtypes float16 bfloat16
-python benchmarks/bench_vector_add.py
-MODEL=meta-llama/Llama-3.2-1B python benchmarks/bench_e2e.py   # default: TinyLlama
+python benchmarks/bench_vector_add.py --dtypes float16 bfloat16
+python benchmarks/bench_e2e.py     --dtypes float16 bfloat16   # TinyLlama by default; MODEL=<hf id> to change
 python scripts/update_docs.py      # render the newest results JSON into README and docs
 ```
 
@@ -144,7 +144,9 @@ cd triton-inference-kit
 bash scripts/run_a100.sh
 ```
 
-Environment knobs: `MODEL` (HF model id for the e2e test and bench; default `TinyLlama/TinyLlama-1.1B-Chat-v1.0`; gated models also need `HF_TOKEN`), `PEAK_GBPS` (override the detected peak), `PYTHON` (interpreter, default `python`). The script logs to `results/run_<timestamp>.log` and prints a summary at the end. Commit `results/*.json` together with the updated README and docs.
+It records `nvidia-smi` and the torch/triton/CUDA versions in `benchmarks/results/env.txt`, runs each test file on its own (log and JUnit XML per file in `benchmarks/results/tests/`), runs every benchmark in float16 and bfloat16, then calls `scripts/update_docs.py`. Everything, including the full run log, lands in `benchmarks/results/`; commit that directory together with the updated README and docs.
+
+Environment knobs: `HF_TOKEN` (also run the e2e test on the gated `meta-llama/Llama-3.2-1B`), `MODEL` (HF model id for the e2e benchmark; default `TinyLlama/TinyLlama-1.1B-Chat-v1.0`), `PEAK_GBPS` (override the detected peak), `PYTHON` (interpreter, default `python`).
 
 ## Repo structure
 
@@ -154,7 +156,7 @@ triton-inference-kit/
 ├── csrc/                       # CUDA C++ RMSNorm (rmsnorm.cu) + pybind binding
 ├── tests/                      # pytest correctness tests (CUDA-gated), incl. e2e
 ├── benchmarks/                 # per-kernel benchmarks + _common.py methodology + e2e bench
-├── results/                    # results/<gpu>_<date>.json + charts (populated by a GPU run)
+│   └── results/                # <gpu>_<date>.json, charts, env.txt, test logs (populated by a GPU run)
 ├── scripts/                    # run_a100.sh (one-shot GPU run), update_docs.py
 ├── docs/                       # per-kernel technical write-ups
 ├── DECISIONS.md                # design decisions log, including corrections
