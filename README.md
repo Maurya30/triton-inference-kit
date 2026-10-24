@@ -138,7 +138,7 @@ python scripts/update_docs.py      # render the newest results JSON into README 
 
 ## Running on a rented GPU
 
-One command on a fresh A100 box (RunPod, Lambda, …) installs, tests, benchmarks and updates the docs, and stops at the first failure:
+One command on a fresh A100 box (RunPod, Lambda, …) installs, tests, benchmarks and updates the docs, and stops at the first failure. [RUNPOD.md](RUNPOD.md) walks through it on RunPod, from picking the template to pushing the results, with runtime and cost estimates:
 
 ```bash
 git clone https://github.com/Maurya30/triton-inference-kit.git
@@ -162,6 +162,7 @@ triton-inference-kit/
 ├── scripts/                    # run_a100.sh (one-shot GPU run), update_docs.py
 ├── docs/                       # per-kernel technical write-ups
 ├── DECISIONS.md                # design decisions log, including corrections
+├── RUNPOD.md                   # step-by-step GPU run on RunPod, runtime and cost
 └── pyproject.toml
 ```
 
