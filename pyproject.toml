@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "triton-inference-kit"
 version = "0.0.1"
-description = "High-performance Triton GPU kernels for transformer inference operations."
+description = "Fused Triton GPU kernels for transformer inference operations."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "Maurya Panchal" }]

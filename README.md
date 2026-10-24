@@ -4,11 +4,11 @@
 
 **Status:** 🚧 Written and reviewed, **not yet validated on a GPU.** Every kernel, test and benchmark in this repo was authored on a machine without an NVIDIA GPU; the first A100 run is what turns the roadmap boxes below from `[ ]` to `[x]` and fills the results table. See [Roadmap](#roadmap).
 
-`triton-inference-kit` is a Python library of hand-written [Triton](https://triton-lang.org/) kernels for the memory-bound operations around the matmuls in a LLaMA-style transformer: RMSNorm, SwiGLU, rotary position embedding (RoPE) and online softmax. RMSNorm is also ported to CUDA C++ (`float4` loads, warp-shuffle reduction) with a walkthrough written for interview prep. Every kernel has a PyTorch reference, a pytest suite, and a benchmark that counts bytes explicitly and reports achieved bandwidth against the GPU's peak. An end-to-end test swaps the kernels into a stock HuggingFace LLaMA model and checks logits and greedy decode against the unpatched model. Design decisions, including the ones that turned out to be wrong, are logged in [`DECISIONS.md`](DECISIONS.md).
+`triton-inference-kit` is a Python library of hand-written [Triton](https://triton-lang.org/) kernels for the memory-bound operations around the matmuls in a LLaMA-style transformer: RMSNorm, SwiGLU, rotary position embedding (RoPE) and online softmax. RMSNorm is also ported to CUDA C++ (`float4` loads, warp-shuffle reduction) with a walkthrough written for interview prep. Every kernel has a PyTorch reference, tests and a benchmark harness, with GPU validation in progress. An end-to-end test swaps the kernels into a stock HuggingFace LLaMA model and checks logits and greedy decode against the unpatched model. Design decisions, including the ones that turned out to be wrong, are logged in [`DECISIONS.md`](DECISIONS.md).
 
 ## Why this exists
 
-PyTorch ships general-purpose kernels that handle every shape and dtype. For LLM inference that generality leaves bandwidth on the table: most non-matmul ops are memory-bound, and PyTorch's unfused defaults move tensors through HBM several times when one pass would do. Production inference stacks (vLLM, SGLang, TensorRT-LLM) fuse these ops by hand. This repo is a readable, testable, benchmarked version of that work.
+PyTorch ships general-purpose kernels that handle every shape and dtype. For LLM inference that generality leaves bandwidth on the table: most non-matmul ops are memory-bound, and PyTorch's unfused defaults move tensors through HBM several times when one pass would do. Production inference stacks (vLLM, SGLang, TensorRT-LLM) fuse these ops by hand. This repo is a readable, testable version of that work, with end-to-end benchmarks after the A100 run.
 
 ## Results
 
