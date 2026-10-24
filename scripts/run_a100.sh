@@ -117,6 +117,18 @@ fi
 # which uses all of them, last. Outputs of earlier runs are cleared so the
 # files in tests/ always come from this run.
 rm -f "$RESULTS"/tests/*.log "$RESULTS"/tests/*.xml "$RESULTS"/tests/*.json
+# The GPU and date these test results belong to; update_docs.py ticks the
+# roadmap only when they match the benchmark results'.
+"$PYTHON" - "$RESULTS/tests/run.json" <<'PY'
+import json
+import os
+import sys
+
+import torch
+
+with open(sys.argv[1], "w") as f:
+    json.dump({"gpu": torch.cuda.get_device_name(), "date": os.environ["TIK_RUN_DATE"]}, f)
+PY
 TESTS=()
 for t in tests/test_*.py; do
   [[ "$t" == tests/test_e2e_llama.py ]] || TESTS+=("$t")

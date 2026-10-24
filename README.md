@@ -2,33 +2,35 @@
 
 > Fused Triton GPU kernels for LLaMA-family inference, plus a CUDA C++ port of one of them.
 
+<!-- STATUS:START -->
 **Status:** 🚧 Written and reviewed, **not yet validated on a GPU.** Every kernel, test and benchmark in this repo was authored on a machine without an NVIDIA GPU; the first A100 run is what turns the roadmap boxes below from `[ ]` to `[x]` and fills the results table. See [Roadmap](#roadmap).
+<!-- STATUS:END -->
 
-`triton-inference-kit` is a Python library of hand-written [Triton](https://triton-lang.org/) kernels for the memory-bound operations around the matmuls in a LLaMA-style transformer: RMSNorm, SwiGLU, rotary position embedding (RoPE) and online softmax. RMSNorm is also ported to CUDA C++ (`float4` loads, warp-shuffle reduction) with a walkthrough written for interview prep. Every kernel has a PyTorch reference, tests and a benchmark harness, with GPU validation in progress. An end-to-end test swaps the kernels into a HuggingFace LLaMA model and checks its logits against the unpatched model. Design decisions, including the ones that turned out to be wrong, are logged in [`DECISIONS.md`](DECISIONS.md).
+`triton-inference-kit` is a Python library of hand-written [Triton](https://triton-lang.org/) kernels for the memory-bound operations around the matmuls in a LLaMA-style transformer: RMSNorm, SwiGLU, rotary position embedding (RoPE) and online softmax. RMSNorm is also ported to CUDA C++ (`float4` loads, warp-shuffle reduction) with a walkthrough written for interview prep. Every kernel has a PyTorch reference, tests and a benchmark harness, <!-- VALIDATION:START -->with GPU validation in progress<!-- VALIDATION:END -->. An end-to-end test swaps the kernels into a HuggingFace LLaMA model and checks its logits against the unpatched model. Design decisions, including the ones that turned out to be wrong, are logged in [`DECISIONS.md`](DECISIONS.md).
 
 ## Why this exists
 
-PyTorch ships general-purpose kernels that handle every shape and dtype. For LLM inference that generality leaves bandwidth on the table: most non-matmul ops are memory-bound, and PyTorch's unfused defaults move tensors through HBM several times when one pass would do. Production inference stacks (vLLM, SGLang, TensorRT-LLM) fuse these ops by hand. This repo is a readable, testable version of that work, with end-to-end benchmarks after the A100 run.
+PyTorch ships general-purpose kernels that handle every shape and dtype. For LLM inference that generality leaves bandwidth on the table: most non-matmul ops are memory-bound, and PyTorch's unfused defaults move tensors through HBM several times when one pass would do. Production inference stacks (vLLM, SGLang, TensorRT-LLM) fuse these ops by hand. This repo is a readable, testable version of that work, <!-- E2E-BENCH:START -->with end-to-end benchmarks after the A100 run<!-- E2E-BENCH:END -->.
 
 ## Results
 
 <!-- RESULTS:START -->
-_pending A100 run. `scripts/run_a100.sh` runs every test and benchmark and fills this table (and the per-kernel tables in `docs/`) from `benchmarks/results/<gpu>_<date>.json` via `scripts/update_docs.py`. No number in this repo is typed by hand._
+_pending A100 run. `scripts/run_a100.sh` runs every test and benchmark and fills this table (and the per-kernel tables in `docs/`) from `benchmarks/results/<gpu>_<date>.json` via `scripts/update_docs.py`. No number in these tables is typed by hand._
 <!-- RESULTS:END -->
 
 ## Roadmap
 
-A box is checked only once the item has run on a real GPU with the results landed in `benchmarks/results/` and the tables above. Everything marked *drafted* exists on disk, compiles syntactically, and has been reviewed, but has not executed on CUDA.
+`scripts/update_docs.py` ticks a box only when that item's tests passed on a real GPU (at least one test ran, none failed or errored) and its results from the same run are in `benchmarks/results/` and the tables above; the scaffolding and roofline boxes are ticked by hand. Everything marked *drafted* exists on disk, compiles syntactically, and has been reviewed, but has not executed on CUDA.
 
 - [x] Package scaffolding + benchmark harness
-- [x] Vector addition (warm-up kernel, sanity check)
-- [ ] Fused RMSNorm, Triton — **drafted; A100 validation pending.** [docs/rmsnorm.md](docs/rmsnorm.md)
-- [ ] RMSNorm, CUDA C++ port (one block per row, `float4` loads, `__shfl_down_sync` reduction) — **drafted; A100 validation pending.** [docs/cuda_rmsnorm.md](docs/cuda_rmsnorm.md)
-- [ ] Fused SwiGLU — **drafted; A100 validation pending.** [docs/swiglu.md](docs/swiglu.md)
-- [ ] Fused RoPE for Q and K (no QKV matmul; cuBLAS handles that) — **drafted; A100 validation pending.** [docs/rope.md](docs/rope.md)
-- [ ] Online softmax — **drafted; A100 validation pending.** [docs/softmax.md](docs/softmax.md)
-- [ ] Benchmarks with explicit byte counts, detected peak bandwidth and a results JSON per run — **written; first run pending.** [benchmarks/](benchmarks/)
-- [ ] End-to-end LLaMA test (random-init config; Llama-3.2-1B when `HF_TOKEN` is set) and prefill/decode benchmark — **written; first run pending.** [tests/test_e2e_llama.py](tests/test_e2e_llama.py), [benchmarks/bench_e2e.py](benchmarks/bench_e2e.py)
+- [ ] Vector addition (warm-up kernel, sanity check) — **written; A100 validation pending.** <!-- roadmap:vector_add -->
+- [ ] Fused RMSNorm, Triton — **drafted; A100 validation pending.** [docs/rmsnorm.md](docs/rmsnorm.md) <!-- roadmap:rmsnorm -->
+- [ ] RMSNorm, CUDA C++ port (one block per row, `float4` loads, `__shfl_down_sync` reduction) — **drafted; A100 validation pending.** [docs/cuda_rmsnorm.md](docs/cuda_rmsnorm.md) <!-- roadmap:rmsnorm_cuda -->
+- [ ] Fused SwiGLU — **drafted; A100 validation pending.** [docs/swiglu.md](docs/swiglu.md) <!-- roadmap:swiglu -->
+- [ ] Fused RoPE for Q and K (no QKV matmul; cuBLAS handles that) — **drafted; A100 validation pending.** [docs/rope.md](docs/rope.md) <!-- roadmap:rope -->
+- [ ] Online softmax — **drafted; A100 validation pending.** [docs/softmax.md](docs/softmax.md) <!-- roadmap:softmax -->
+- [ ] Benchmarks with explicit byte counts, detected peak bandwidth and a results JSON per run — **written; first run pending.** [benchmarks/](benchmarks/) <!-- roadmap:benchmarks -->
+- [ ] End-to-end LLaMA test (random-init config; Llama-3.2-1B when `HF_TOKEN` is set) and prefill/decode benchmark — **written; first run pending.** [tests/test_e2e_llama.py](tests/test_e2e_llama.py), [benchmarks/bench_e2e.py](benchmarks/bench_e2e.py) <!-- roadmap:e2e -->
 - [ ] Roofline write-up with measured numbers — after the first run.
 
 ## Installation
