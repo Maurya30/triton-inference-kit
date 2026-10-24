@@ -4,7 +4,7 @@
 
 **Status:** 🚧 Written and reviewed, **not yet validated on a GPU.** Every kernel, test and benchmark in this repo was authored on a machine without an NVIDIA GPU; the first A100 run is what turns the roadmap boxes below from `[ ]` to `[x]` and fills the results table. See [Roadmap](#roadmap).
 
-`triton-inference-kit` is a Python library of hand-written [Triton](https://triton-lang.org/) kernels for the memory-bound operations around the matmuls in a LLaMA-style transformer: RMSNorm, SwiGLU, rotary position embedding (RoPE) and online softmax. RMSNorm is also ported to CUDA C++ (`float4` loads, warp-shuffle reduction) with a walkthrough written for interview prep. Every kernel has a PyTorch reference, tests and a benchmark harness, with GPU validation in progress. An end-to-end test swaps the kernels into a stock HuggingFace LLaMA model and checks logits and greedy decode against the unpatched model. Design decisions, including the ones that turned out to be wrong, are logged in [`DECISIONS.md`](DECISIONS.md).
+`triton-inference-kit` is a Python library of hand-written [Triton](https://triton-lang.org/) kernels for the memory-bound operations around the matmuls in a LLaMA-style transformer: RMSNorm, SwiGLU, rotary position embedding (RoPE) and online softmax. RMSNorm is also ported to CUDA C++ (`float4` loads, warp-shuffle reduction) with a walkthrough written for interview prep. Every kernel has a PyTorch reference, tests and a benchmark harness, with GPU validation in progress. An end-to-end test swaps the kernels into a HuggingFace LLaMA model and checks its logits against the unpatched model. Design decisions, including the ones that turned out to be wrong, are logged in [`DECISIONS.md`](DECISIONS.md).
 
 ## Why this exists
 
@@ -28,7 +28,7 @@ A box is checked only once the item has run on a real GPU with the results lande
 - [ ] Fused RoPE for Q and K (no QKV matmul; cuBLAS handles that) — **drafted; A100 validation pending.** [docs/rope.md](docs/rope.md)
 - [ ] Online softmax — **drafted; A100 validation pending.** [docs/softmax.md](docs/softmax.md)
 - [ ] Benchmarks with explicit byte counts, detected peak bandwidth and a results JSON per run — **written; first run pending.** [benchmarks/](benchmarks/)
-- [ ] End-to-end LLaMA test and prefill/decode benchmark (TinyLlama by default, Llama-3.2-1B via `MODEL`) — **written; first run pending.** [tests/test_llama_e2e.py](tests/test_llama_e2e.py), [benchmarks/bench_e2e.py](benchmarks/bench_e2e.py)
+- [ ] End-to-end LLaMA test (random-init config; Llama-3.2-1B when `HF_TOKEN` is set) and prefill/decode benchmark — **written; first run pending.** [tests/test_e2e_llama.py](tests/test_e2e_llama.py), [benchmarks/bench_e2e.py](benchmarks/bench_e2e.py)
 - [ ] Roofline write-up with measured numbers — after the first run.
 
 ## Installation
@@ -38,7 +38,7 @@ Requires a CUDA-capable NVIDIA GPU and Python ≥ 3.10. The CUDA C++ kernel addi
 ```bash
 git clone https://github.com/Maurya30/triton-inference-kit.git
 cd triton-inference-kit
-pip install -e ".[dev,bench,e2e]"   # dev = pytest + ninja; bench = matplotlib; e2e = transformers
+pip install -e ".[dev,bench]"   # dev = pytest + ninja + transformers; bench = matplotlib
 ```
 
 ## Usage
@@ -83,13 +83,15 @@ from triton_inference_kit import online_softmax
 probs = online_softmax(attention_scores)  # softmax over the last dim
 ```
 
-Run a stock HuggingFace LLaMA-architecture model on these kernels:
+Run a stock HuggingFace LLaMA-architecture model on these kernels. RMSNorm, SwiGLU and RoPE are swapped under any attention implementation; the softmax swap needs `attn_implementation="eager"`, because SDPA fuses softmax into the attention kernel:
 
 ```python
 from transformers import AutoModelForCausalLM
 from triton_inference_kit.llama_patch import patched_llama
 
-model = AutoModelForCausalLM.from_pretrained("TinyLlama/TinyLlama-1.1B-Chat-v1.0", torch_dtype=torch.float16).cuda()
+model = AutoModelForCausalLM.from_pretrained(
+    "TinyLlama/TinyLlama-1.1B-Chat-v1.0", dtype=torch.float16, attn_implementation="eager"
+).cuda()
 with patched_llama(rmsnorm_impl="triton") as stats:   # or "cuda"
     out = model.generate(input_ids, max_new_tokens=32, do_sample=False)
 print(stats.calls)  # how many times each kernel ran
@@ -103,7 +105,7 @@ Every kernel ships with:
 - **A pytest suite** that runs kernel and reference on identical random inputs across a grid of shapes and dtypes and asserts agreement with `torch.testing.assert_close` within dtype-appropriate tolerances (fp32: `1e-5`; fp16/bf16: `1e-2`; softmax tighter, see its test file).
 - **A two-layer anchor** where PyTorch has a built-in: the reference itself is tested against `F.rms_norm` (RMSNorm) or an independently written HF-style implementation (RoPE), so a buggy reference cannot make the kernel "match" while both are wrong.
 - **The CUDA port** is tested against an fp32 reference across odd, even and non-multiple-of-8 hidden sizes, including deliberately misaligned views that force its scalar fallback, and cross-checked against the Triton kernel.
-- **The end-to-end test** patches a stock HF LLaMA model, asserts the kernels actually ran, that fp32-upcast logits are within `atol 0.5, rtol 0.02` of the unpatched model (the tolerance and its derivation are in the test's docstring), and that 32 greedily decoded tokens are identical.
+- **The end-to-end test** builds a small random-init LLaMA (no download) and, when `HF_TOKEN` is set, loads `meta-llama/Llama-3.2-1B`; swaps in all four kernels; asserts each ran exactly as often as one forward needs (two RMSNorms per layer plus the final norm, one of each other kernel per layer); and checks fp32-upcast logits against the unpatched model within fp16 tolerance (derivation in the test's docstring). The measured max difference is saved next to the benchmark results.
 
 > **Note on CI.** Every test is gated on `torch.cuda.is_available()`. On a CPU-only machine the whole suite is skipped and exits green, which is a false signal of correctness. Real validation needs a CUDA GPU; see [Running on a rented GPU](#running-on-a-rented-gpu).
 

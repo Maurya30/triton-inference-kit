@@ -16,9 +16,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0", "ninja>=1.10"]   # ninja: required by torch.utils.cpp_extension.load for the CUDA kernel
+# ninja: required by torch.utils.cpp_extension.load for the CUDA kernel.
+# transformers: LLaMA end-to-end test + bench (tests/test_e2e_llama.py, benchmarks/bench_e2e.py).
+dev = ["pytest>=7.0", "ninja>=1.10", "transformers>=4.56"]
 bench = ["matplotlib>=3.7"]
-e2e = ["transformers>=4.45", "sentencepiece"]   # LLaMA end-to-end test + bench (tests/test_llama_e2e.py, benchmarks/bench_e2e.py)
 
 [project.urls]
 Repository = "https://github.com/Maurya30/triton-inference-kit"
