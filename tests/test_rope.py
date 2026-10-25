@@ -72,6 +72,16 @@ def _tol(dtype: torch.dtype) -> dict:
     return dict(atol=1e-2, rtol=1e-2)
 
 
+def _ref_rounded_once(q, k, cos, sin):
+    """apply_rope_ref evaluated in fp32 and rounded once to the input dtype,
+    which is what the kernel computes (fp32 math, one rounding at the store).
+    Evaluated directly in bf16 the reference rounds after each multiply and
+    after the add, and on large bf16 tensors a correct kernel lands two bf16
+    ulps from it often enough to exceed atol=rtol=1e-2."""
+    q_ref, k_ref = apply_rope_ref(q.float(), k.float(), cos.float(), sin.float())
+    return q_ref.to(q.dtype), k_ref.to(k.dtype)
+
+
 def _make_cos_sin(B: int, S: int, D: int, dtype: torch.dtype):
     """Generate realistic cos/sin from a positional sweep.
     Using the actual rope frequency formula keeps the magnitudes realistic
@@ -119,7 +129,7 @@ def test_rope_matches_reference(config, dtype):
     cos, sin = _make_cos_sin(B, S, D, dtype)
 
     q_triton, k_triton = apply_rope(q, k, cos, sin)
-    q_ref, k_ref = apply_rope_ref(q, k, cos, sin)
+    q_ref, k_ref = _ref_rounded_once(q, k, cos, sin)
 
     torch.testing.assert_close(q_triton, q_ref, **_tol(dtype))
     torch.testing.assert_close(k_triton, k_ref, **_tol(dtype))
@@ -162,7 +172,7 @@ def test_rope_accepts_transposed_views(dtype):
     cos, sin = _make_cos_sin(B, S, D, dtype)
 
     q_triton, k_triton = apply_rope(q, k, cos, sin)
-    q_ref, k_ref = apply_rope_ref(q.contiguous(), k.contiguous(), cos, sin)
+    q_ref, k_ref = _ref_rounded_once(q.contiguous(), k.contiguous(), cos, sin)
 
     assert q_triton.is_contiguous() and k_triton.is_contiguous()
     torch.testing.assert_close(q_triton, q_ref, **_tol(dtype))
@@ -180,7 +190,7 @@ def test_rope_broadcasts_batch1_cos_sin(dtype):
     cos1, sin1 = _make_cos_sin(1, S, D, dtype)
 
     q_triton, k_triton = apply_rope(q, k, cos1, sin1)
-    q_ref, k_ref = apply_rope_ref(q, k, cos1.expand(B, S, D), sin1.expand(B, S, D))
+    q_ref, k_ref = _ref_rounded_once(q, k, cos1.expand(B, S, D), sin1.expand(B, S, D))
 
     torch.testing.assert_close(q_triton, q_ref, **_tol(dtype))
     torch.testing.assert_close(k_triton, k_ref, **_tol(dtype))
