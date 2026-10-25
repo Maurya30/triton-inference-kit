@@ -16,6 +16,9 @@ sub-blocks:
         l_new = l * exp(m - m_new) + sum(exp(block - m_new))
         m, l = m_new, l_new
 
+(While m_new is still -inf, i.e. every value so far is -inf, the kernel
+subtracts 0 instead of m_new; otherwise (-inf) - (-inf) = NaN would poison l.)
+
 A final second pass is still needed to emit each output element
 `y[i] = exp(x[i] - m_final) / l_final`, so this kernel reads each row
 twice, not once (the second read of a just-read row is normally an L2
@@ -73,8 +76,12 @@ def _online_softmax_kernel(
         block_max = tl.max(x_block, axis=0)
         m_new = tl.maximum(m, block_max)
         # Rescale the previous l (because we're shifting the baseline from m
-        # to m_new) and add this block's contribution.
-        l = l * tl.exp(m - m_new) + tl.sum(tl.exp(x_block - m_new), axis=0)
+        # to m_new) and add this block's contribution. While every value so
+        # far is -inf, m_new is -inf too and (-inf) - (-inf) would be NaN, so
+        # shift by 0 instead: exp(-inf) = 0 keeps l at 0 until a finite value
+        # arrives. For any finite m_new this is the same arithmetic as before.
+        m_shift = tl.where(m_new == -float("inf"), 0.0, m_new)
+        l = l * tl.exp(m - m_shift) + tl.sum(tl.exp(x_block - m_shift), axis=0)
         m = m_new
 
     # -------- Pass 2: emit normalized outputs --------

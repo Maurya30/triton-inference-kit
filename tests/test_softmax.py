@@ -93,6 +93,25 @@ def test_online_softmax_large_negative_values(dtype):
     )
 
 
+@pytest.mark.parametrize("dtype", DTYPES)
+def test_online_softmax_leading_neg_inf_block(dtype):
+    """A row whose whole first sub-block is -inf (a fully masked prefix, as
+    with long left padding) must still give a valid distribution. The running
+    max stays -inf through that block, and the rescale must not turn
+    (-inf) - (-inf) into NaN."""
+    torch.manual_seed(0)
+    x = torch.randn(4, 2048, device="cuda", dtype=dtype)
+    x[:, :1024] = float("-inf")   # exactly the first sub-block at the default block_size
+    x[1, :1500] = float("-inf")   # a prefix longer than one sub-block
+    out = online_softmax(x)
+    assert not torch.isnan(out).any()
+    torch.testing.assert_close(out, softmax_ref(x), **_tol(dtype))
+
+    y = torch.randn(3, 1000, device="cuda", dtype=dtype)
+    y[:, :192] = float("-inf")    # the first 3 of 16 sub-blocks at block_size=64
+    torch.testing.assert_close(online_softmax(y, block_size=64), softmax_ref(y), **_tol(dtype))
+
+
 def test_online_softmax_single_element_row():
     """N=1 edge case: output must be exactly 1.0."""
     x = torch.randn(5, 1, device="cuda", dtype=torch.float32)

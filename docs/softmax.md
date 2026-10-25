@@ -38,6 +38,12 @@ The rescaling `l * exp(m - m_new)` is the clever bit: when the max shifts
 up, every previously-accumulated `exp(x - m)` is `exp(m_new - m)` times too
 large and gets corrected in one multiply.
 
+One edge case: if every value seen so far is `-inf` (a fully masked prefix,
+such as long left padding), `m_new` is `-inf` too and `m - m_new` is
+`(-inf) - (-inf) = NaN`, which would turn the whole row into NaN. The kernel
+subtracts 0 instead of `m_new` while `m_new` is `-inf`, so `l` stays 0 until
+the first finite value arrives.
+
 ## 2. Why online matters here
 
 For rows that fit in one SRAM tile, online softmax and safe softmax
