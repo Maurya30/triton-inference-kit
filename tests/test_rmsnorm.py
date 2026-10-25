@@ -116,6 +116,15 @@ def test_rmsnorm_rejects_shape_mismatch():
         rmsnorm(x, weight)
 
 
+def test_rmsnorm_rejects_noncontiguous_weight():
+    """The kernel reads the weight with unit stride; a strided view must be
+    rejected instead of silently reading the wrong elements."""
+    x = torch.randn(4, 512, device="cuda")
+    weight = torch.randn(1024, device="cuda")[::2]
+    with pytest.raises(AssertionError, match="weight must be contiguous"):
+        rmsnorm(x, weight)
+
+
 def test_rmsnorm_rejects_dtype_mismatch():
     """Weight dtype must match x dtype — mixed-dtype gain is a footgun."""
     x = torch.randn(4, 512, device="cuda", dtype=torch.float16)

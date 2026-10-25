@@ -118,7 +118,7 @@ def rmsnorm(
 
     Args:
         x: CUDA tensor, any rank, last dim = N. Must be contiguous.
-        weight: CUDA tensor, shape `(N,)`, same dtype as x.
+        weight: CUDA tensor, shape `(N,)`, same dtype as x. Must be contiguous.
         eps: stability epsilon.
 
     Returns:
@@ -126,6 +126,8 @@ def rmsnorm(
     """
     assert x.is_cuda and weight.is_cuda, "inputs must be on CUDA"
     assert x.is_contiguous(), "input must be contiguous"
+    # The kernel reads the gain as weight_ptr + col, i.e. with unit stride.
+    assert weight.is_contiguous(), "weight must be contiguous"
     assert weight.dim() == 1, f"weight must be 1-D, got shape {tuple(weight.shape)}"
     assert weight.shape[0] == x.shape[-1], (
         f"weight length {weight.shape[0]} must match x's last dim {x.shape[-1]}"
