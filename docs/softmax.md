@@ -106,7 +106,22 @@ Baselines: eager naive two-pass, `F.softmax`, `torch.compile`. Median of
 `do_bench`, L2 flushed before each timed call.
 
 <!-- RESULTS:START -->
-_pending A100 run. Filled from the newest `benchmarks/results/*.json` by `scripts/update_docs.py`._
+**NVIDIA A100-SXM4-80GB** · driver 595.91.07 · CUDA 12.8 · torch 2.8.0+cu128 · triton 3.4.0 · 2026-11-07 · peak 2039 GB/s (device attributes: 2 x mem_clock_rate x mem_bus_width)
+
+Timing: triton.testing.do_bench median; L2 flushed before each timed call. Bytes per call: read x once + write y once; the same count is used for every column, so GB/s is *effective* bandwidth on a shared roofline axis.
+
+| shape | dtype | bytes/call | triton ms | triton GB/s | triton % peak | eager GB/s | F.softmax GB/s | torch.compile GB/s | triton vs eager | triton vs F.softmax | triton vs torch.compile |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| M=32768 N=1024 | float16 | 128 MiB | 0.1016 | 1,321 | 64.8% | 238 | 1,095 | 1,379 | 5.56x | 1.21x | 0.96x |
+| M=16384 N=2048 | float16 | 128 MiB | 0.0956 | 1,405 | 68.9% | 265 | 968 | 1,173 | 5.30x | 1.45x | 1.20x |
+| M=8192 N=4096 | float16 | 128 MiB | 0.0999 | 1,343 | 65.9% | 256 | 707 | 1,452 | 5.24x | 1.90x | 0.92x |
+| M=2048 N=16384 | float16 | 128 MiB | 0.1399 | 960 | 47.1% | 264 | 1,160 | 1,469 | 3.63x | 0.83x | 0.65x |
+| M=4096 N=32768 | float16 | 512 MiB | 0.5005 | 1,073 | 52.6% | 291 | 1,174 | 1,322 | 3.68x | 0.91x | 0.81x |
+| M=32768 N=1024 | bfloat16 | 128 MiB | 0.0927 | 1,448 | 71.0% | 265 | 1,195 | 1,383 | 5.47x | 1.21x | 1.05x |
+| M=16384 N=2048 | bfloat16 | 128 MiB | 0.0951 | 1,412 | 69.2% | 264 | 964 | 1,138 | 5.34x | 1.46x | 1.24x |
+| M=8192 N=4096 | bfloat16 | 128 MiB | 0.1006 | 1,334 | 65.4% | 256 | 710 | 1,400 | 5.20x | 1.88x | 0.95x |
+| M=2048 N=16384 | bfloat16 | 128 MiB | 0.1406 | 955 | 46.8% | 263 | 1,138 | 1,426 | 3.63x | 0.84x | 0.67x |
+| M=4096 N=32768 | bfloat16 | 512 MiB | 0.5009 | 1,072 | 52.6% | 290 | 1,159 | 1,303 | 3.69x | 0.92x | 0.82x |
 <!-- RESULTS:END -->
 
 ## 5. Lesson learned

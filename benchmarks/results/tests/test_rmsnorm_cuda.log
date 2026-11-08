@@ -1,0 +1,110 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 97 items
+
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-1] W1107 21:37:16.970000 905 torch/utils/cpp_extension.py:2425] TORCH_CUDA_ARCH_LIST is not set, all archs for visible cards are included for compilation. 
+W1107 21:37:16.970000 905 torch/utils/cpp_extension.py:2425] If this is not desired, please set os.environ['TORCH_CUDA_ARCH_LIST'] to specific architectures.
+PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-3] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-33] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-1022] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-1025] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-2048] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-5120] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-11008] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-1] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-3] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-33] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-1022] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-1025] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-2048] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-5120] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-11008] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-1] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-3] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-33] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-1022] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-1025] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-2048] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-5120] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-11008] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-1] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-3] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-33] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-1022] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-1025] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-2048] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-5120] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-11008] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-1] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-3] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-33] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-1022] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-1025] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-2048] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-5120] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-11008] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-1] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-3] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-33] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-1022] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-1025] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-2048] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-5120] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-11008] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype0-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype0-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype0-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype0-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype1-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype1-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype1-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype1-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype2-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype2-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype2-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype2-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_misaligned_input_uses_scalar_fallback[dtype0] PASSED
+tests/test_rmsnorm_cuda.py::test_misaligned_input_uses_scalar_fallback[dtype1] PASSED
+tests/test_rmsnorm_cuda.py::test_misaligned_input_uses_scalar_fallback[dtype2] PASSED
+tests/test_rmsnorm_cuda.py::test_misaligned_weight_uses_scalar_fallback[dtype0] PASSED
+tests/test_rmsnorm_cuda.py::test_misaligned_weight_uses_scalar_fallback[dtype1] PASSED
+tests/test_rmsnorm_cuda.py::test_misaligned_weight_uses_scalar_fallback[dtype2] PASSED
+tests/test_rmsnorm_cuda.py::test_llama_shaped_3d_input PASSED
+tests/test_rmsnorm_cuda.py::test_eps_is_applied PASSED
+tests/test_rmsnorm_cuda.py::test_empty_input PASSED
+tests/test_rmsnorm_cuda.py::test_rejects_cpu_tensors PASSED
+tests/test_rmsnorm_cuda.py::test_rejects_shape_mismatch PASSED
+tests/test_rmsnorm_cuda.py::test_rejects_dtype_mismatch PASSED
+tests/test_rmsnorm_cuda.py::test_rejects_unsupported_dtype PASSED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_rmsnorm_cuda.xml -
+============================= 97 passed in 52.54s ==============================

@@ -1,0 +1,20 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 9 items
+
+tests/test_vector_add.py::test_add_matches_pytorch[dtype0-128] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype0-1024] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype0-10000] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype0-1000000] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype1-128] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype1-1024] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype1-10000] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype1-1000000] PASSED
+tests/test_vector_add.py::test_add_rejects_cpu_tensors PASSED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_vector_add.xml -
+============================== 9 passed in 2.53s ===============================

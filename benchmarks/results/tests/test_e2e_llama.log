@@ -1,0 +1,26 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 6 items
+
+tests/test_e2e_llama.py::test_patched_logits_match_stock[random-init LlamaConfig-triton] 
+[random-init LlamaConfig | rmsnorm=triton] max |patched - stock| logit = 3.296e-03 (max |logit| 2.23; atol 0.02, rtol 0.02), argmax agreement 99.8%, kernel calls = {'rmsnorm': 9, 'swiglu': 4, 'rope': 4, 'softmax': 4}
+PASSED
+tests/test_e2e_llama.py::test_patched_logits_match_stock[random-init LlamaConfig-cuda] W1107 21:38:38.933000 1848 torch/utils/cpp_extension.py:2425] TORCH_CUDA_ARCH_LIST is not set, all archs for visible cards are included for compilation. 
+W1107 21:38:38.933000 1848 torch/utils/cpp_extension.py:2425] If this is not desired, please set os.environ['TORCH_CUDA_ARCH_LIST'] to specific architectures.
+
+[random-init LlamaConfig | rmsnorm=cuda] max |patched - stock| logit = 3.174e-03 (max |logit| 2.23; atol 0.02, rtol 0.02), argmax agreement 100.0%, kernel calls = {'rmsnorm': 9, 'swiglu': 4, 'rope': 4, 'softmax': 4}
+PASSED
+tests/test_e2e_llama.py::test_patch_is_reverted_on_exit[random-init LlamaConfig] PASSED
+tests/test_e2e_llama.py::test_patched_logits_match_stock[meta-llama/Llama-3.2-1B-triton] SKIPPED
+tests/test_e2e_llama.py::test_patched_logits_match_stock[meta-llama/Llama-3.2-1B-cuda] SKIPPED
+tests/test_e2e_llama.py::test_patch_is_reverted_on_exit[meta-llama/Llama-3.2-1B] SKIPPED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_e2e_llama.xml -
+=========================== short test summary info ============================
+SKIPPED [2] tests/test_e2e_llama.py:146: HF_TOKEN not set; skipping the gated meta-llama/Llama-3.2-1B
+SKIPPED [1] tests/test_e2e_llama.py:185: HF_TOKEN not set; skipping the gated meta-llama/Llama-3.2-1B
+========================= 3 passed, 3 skipped in 8.69s =========================

@@ -97,7 +97,20 @@ per call: read q, k, cos, sin once, write both outputs once. Median of
 `do_bench`, L2 flushed before each timed call.
 
 <!-- RESULTS:START -->
-_pending A100 run. Filled from the newest `benchmarks/results/*.json` by `scripts/update_docs.py`._
+**NVIDIA A100-SXM4-80GB** · driver 595.91.07 · CUDA 12.8 · torch 2.8.0+cu128 · triton 3.4.0 · 2026-11-07 · peak 2039 GB/s (device attributes: 2 x mem_clock_rate x mem_bus_width)
+
+Timing: triton.testing.do_bench median; L2 flushed before each timed call. Bytes per call: read q, k, cos, sin once + write q_out, k_out once; the same count is used for every column, so GB/s is *effective* bandwidth on a shared roofline axis.
+
+| shape | dtype | bytes/call | triton ms | triton GB/s | triton % peak | eager GB/s | torch.compile GB/s | triton vs eager | triton vs torch.compile |
+|---|---|---|---|---|---|---|---|---|---|
+| LLaMA-2 7B MHA S=8192 | float16 | 260 MiB | 0.6891 | 396 | 19.4% | 190 | 1,602 | 2.08x | 0.25x |
+| LLaMA-3 8B GQA S=8192 | float16 | 164 MiB | 0.3578 | 481 | 23.6% | 189 | 1,507 | 2.54x | 0.32x |
+| LLaMA-3 70B GQA S=8192 | float16 | 292 MiB | 0.6350 | 482 | 23.6% | 193 | 1,582 | 2.50x | 0.30x |
+| LLaMA-3 8B GQA B=8 S=2048 | float16 | 328 MiB | 0.7040 | 489 | 24.0% | 189 | 1,616 | 2.58x | 0.30x |
+| LLaMA-2 7B MHA S=8192 | bfloat16 | 260 MiB | 0.5702 | 478 | 23.4% | 190 | 1,588 | 2.51x | 0.30x |
+| LLaMA-3 8B GQA S=8192 | bfloat16 | 164 MiB | 0.3606 | 477 | 23.4% | 189 | 1,499 | 2.53x | 0.32x |
+| LLaMA-3 70B GQA S=8192 | bfloat16 | 292 MiB | 0.6400 | 478 | 23.5% | 192 | 1,589 | 2.49x | 0.30x |
+| LLaMA-3 8B GQA B=8 S=2048 | bfloat16 | 328 MiB | 0.7099 | 484 | 23.8% | 189 | 1,602 | 2.57x | 0.30x |
 <!-- RESULTS:END -->
 
 ## 6. Lesson learned

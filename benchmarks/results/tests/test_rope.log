@@ -1,0 +1,44 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 33 items
+
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype0-config0] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype0-config1] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype0-config2] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype0-config3] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype1-config0] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype1-config1] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype1-config2] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype1-config3] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype2-config0] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype2-config1] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype2-config2] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype2-config3] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype0-config0] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype0-config1] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype0-config2] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype0-config3] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype1-config0] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype1-config1] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype1-config2] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype1-config3] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype2-config0] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype2-config1] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype2-config2] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype2-config3] PASSED
+tests/test_rope.py::test_rope_rejects_odd_head_dim PASSED
+tests/test_rope.py::test_rope_rejects_shape_mismatch PASSED
+tests/test_rope.py::test_rope_accepts_transposed_views[dtype0] PASSED
+tests/test_rope.py::test_rope_accepts_transposed_views[dtype1] PASSED
+tests/test_rope.py::test_rope_accepts_transposed_views[dtype2] PASSED
+tests/test_rope.py::test_rope_broadcasts_batch1_cos_sin[dtype0] PASSED
+tests/test_rope.py::test_rope_broadcasts_batch1_cos_sin[dtype1] PASSED
+tests/test_rope.py::test_rope_broadcasts_batch1_cos_sin[dtype2] PASSED
+tests/test_rope.py::test_rope_rejects_cos_sin_batch_mismatch PASSED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_rope.xml -
+============================== 33 passed in 8.44s ==============================

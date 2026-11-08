@@ -1,0 +1,52 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 41 items
+
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype0-shape0] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype0-shape1] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype0-shape2] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype0-shape3] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype0-shape4] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype0-shape5] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype1-shape0] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype1-shape1] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype1-shape2] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype1-shape3] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype1-shape4] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype1-shape5] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype2-shape0] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype2-shape1] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype2-shape2] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype2-shape3] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype2-shape4] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype2-shape5] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype0-shape0] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype0-shape1] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype0-shape2] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype0-shape3] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype0-shape4] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype0-shape5] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype1-shape0] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype1-shape1] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype1-shape2] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype1-shape3] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype1-shape4] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype1-shape5] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype2-shape0] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype2-shape1] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype2-shape2] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype2-shape3] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype2-shape4] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype2-shape5] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_preserves_shape_and_dtype PASSED
+tests/test_rmsnorm.py::test_rmsnorm_rejects_cpu_tensors PASSED
+tests/test_rmsnorm.py::test_rmsnorm_rejects_shape_mismatch PASSED
+tests/test_rmsnorm.py::test_rmsnorm_rejects_noncontiguous_weight PASSED
+tests/test_rmsnorm.py::test_rmsnorm_rejects_dtype_mismatch PASSED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_rmsnorm.xml -
+============================== 41 passed in 4.17s ==============================

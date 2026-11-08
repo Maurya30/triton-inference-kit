@@ -112,7 +112,22 @@ Columns:
    hand-tuning starts to earn its keep. See `DECISIONS.md`.
 
 <!-- RESULTS:START -->
-_pending A100 run. Filled from the newest `benchmarks/results/*.json` by `scripts/update_docs.py`._
+**NVIDIA A100-SXM4-80GB** · driver 595.91.07 · CUDA 12.8 · torch 2.8.0+cu128 · triton 3.4.0 · 2026-11-07 · peak 2039 GB/s (device attributes: 2 x mem_clock_rate x mem_bus_width)
+
+Timing: triton.testing.do_bench median; L2 flushed before each timed call. Bytes per call: read x once + write y once + read weight once; the same count is used for every column, so GB/s is *effective* bandwidth on a shared roofline axis.
+
+| shape | dtype | bytes/call | triton ms | triton GB/s | triton % peak | cuda GB/s | cuda % peak | eager GB/s | F.rms_norm GB/s | torch.compile GB/s | triton vs cuda | triton vs eager | triton vs F.rms_norm | triton vs torch.compile |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| M=16384 N=1024 | float16 | 64 MiB | 0.0512 | 1,312 | 64.3% | 1,307 | 64.1% | 160 | 138 | 1,321 | 1.00x | 8.21x | 9.53x | 0.99x |
+| M=16384 N=2048 | float16 | 128 MiB | 0.0876 | 1,532 | 75.2% | 1,505 | 73.8% | 188 | 146 | 1,459 | 1.02x | 8.15x | 10.53x | 1.05x |
+| M=16384 N=4096 | float16 | 256 MiB | 0.1640 | 1,637 | 80.3% | 1,626 | 79.7% | 195 | 150 | 1,672 | 1.01x | 8.39x | 10.94x | 0.98x |
+| M=16384 N=5120 | float16 | 320 MiB | 0.2028 | 1,655 | 81.2% | 1,556 | 76.3% | 197 | 151 | 1,717 | 1.06x | 8.40x | 10.96x | 0.96x |
+| M=16384 N=8192 | float16 | 512 MiB | 0.3171 | 1,693 | 83.0% | 1,674 | 82.1% | 200 | 153 | 1,729 | 1.01x | 8.48x | 11.07x | 0.98x |
+| M=16384 N=1024 | bfloat16 | 64 MiB | 0.0504 | 1,332 | 65.3% | 1,332 | 65.3% | 175 | 137 | 1,328 | 1.00x | 7.63x | 9.72x | 1.00x |
+| M=16384 N=2048 | bfloat16 | 128 MiB | 0.0877 | 1,531 | 75.1% | 1,505 | 73.8% | 187 | 145 | 1,464 | 1.02x | 8.18x | 10.58x | 1.05x |
+| M=16384 N=4096 | bfloat16 | 256 MiB | 0.1649 | 1,628 | 79.9% | 1,626 | 79.8% | 194 | 149 | 1,678 | 1.00x | 8.39x | 10.94x | 0.97x |
+| M=16384 N=5120 | bfloat16 | 320 MiB | 0.2031 | 1,652 | 81.0% | 1,558 | 76.4% | 196 | 150 | 1,715 | 1.06x | 8.43x | 11.02x | 0.96x |
+| M=16384 N=8192 | bfloat16 | 512 MiB | 0.3173 | 1,692 | 83.0% | 1,674 | 82.1% | 199 | 152 | 1,728 | 1.01x | 8.52x | 11.15x | 0.98x |
 <!-- RESULTS:END -->
 
 ## 5. Roofline analysis

@@ -1,0 +1,776 @@
+triton-inference-kit full run, Sat Nov  7 21:36:42 UTC 2026, log: benchmarks/results/run_2026-11-07_213642.log
+HF_TOKEN unset  MODEL=TinyLlama/TinyLlama-1.1B-Chat-v1.0 (default)  PEAK_GBPS=auto  PYTHON=python
+
+=== [21:36:42] environment -> benchmarks/results/env.txt ===
+date (UTC) : 2026-11-07 21:36:42
+commit     : b1b681268d50
+
+Sat Nov  7 21:36:42 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 595.91.07              Driver Version: 595.91.07      CUDA Version: 13.2     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|                                         |                        |               MIG M. |
+|=========================================+========================+======================|
+|   0  NVIDIA A100-SXM4-80GB          On  |   00000000:BD:00.0 Off |                    0 |
+| N/A   39C    P0             63W /  400W |       0MiB /  81920MiB |      0%      Default |
+|                                         |                        |             Disabled |
++-----------------------------------------+------------------------+----------------------+
+
++-----------------------------------------------------------------------------------------+
+| Processes:                                                                              |
+|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |
+|        ID   ID                                                               Usage      |
+|=========================================================================================|
+|  No running processes found                                                             |
++-----------------------------------------------------------------------------------------+
+
+python     : 3.12.3
+torch      : 2.8.0+cu128 | CUDA 12.8 | cuDNN 91002
+triton     : 3.4.0
+gpu        : NVIDIA A100-SXM4-80GB | compute capability (8, 0)
+
+nvcc       : Build cuda_12.8.r12.8/compiler.35583870_0
+
+=== [21:36:45] pip install ===
+Obtaining file:///workspace/triton-inference-kit
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Installing backend dependencies: started
+  Installing backend dependencies: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Requirement already satisfied: torch>=2.1 in /usr/local/lib/python3.12/dist-packages (from triton-inference-kit==0.0.1) (2.8.0+cu128)
+Requirement already satisfied: triton>=2.1 in /usr/local/lib/python3.12/dist-packages (from triton-inference-kit==0.0.1) (3.4.0)
+Collecting matplotlib>=3.7 (from triton-inference-kit==0.0.1)
+  Downloading matplotlib-3.11.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (80 kB)
+Collecting ninja>=1.10 (from triton-inference-kit==0.0.1)
+  Downloading ninja-1.13.2-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (5.4 kB)
+Collecting pytest>=7.0 (from triton-inference-kit==0.0.1)
+  Downloading pytest-9.2.0-py3-none-any.whl.metadata (7.9 kB)
+Collecting transformers>=4.56 (from triton-inference-kit==0.0.1)
+  Downloading transformers-5.22.2-py3-none-any.whl.metadata (31 kB)
+Collecting contourpy>=1.0.1 (from matplotlib>=3.7->triton-inference-kit==0.0.1)
+  Downloading contourpy-1.4.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (3.8 kB)
+Collecting cycler>=0.10 (from matplotlib>=3.7->triton-inference-kit==0.0.1)
+  Downloading cycler-0.12.1-py3-none-any.whl.metadata (3.8 kB)
+Collecting fonttools>=4.28.2 (from matplotlib>=3.7->triton-inference-kit==0.0.1)
+  Downloading fonttools-4.68.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (139 kB)
+Collecting kiwisolver>=1.3.1 (from matplotlib>=3.7->triton-inference-kit==0.0.1)
+  Downloading kiwisolver-1.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (5.2 kB)
+Requirement already satisfied: numpy>=1.25 in /usr/local/lib/python3.12/dist-packages (from matplotlib>=3.7->triton-inference-kit==0.0.1) (2.5.2)
+Requirement already satisfied: packaging>=20.0 in /usr/local/lib/python3.12/dist-packages (from matplotlib>=3.7->triton-inference-kit==0.0.1) (26.3)
+Requirement already satisfied: pillow>=9 in /usr/local/lib/python3.12/dist-packages (from matplotlib>=3.7->triton-inference-kit==0.0.1) (13.0.0)
+Requirement already satisfied: pyparsing>=3 in /usr/lib/python3/dist-packages (from matplotlib>=3.7->triton-inference-kit==0.0.1) (3.1.1)
+Requirement already satisfied: python-dateutil>=2.7 in /usr/local/lib/python3.12/dist-packages (from matplotlib>=3.7->triton-inference-kit==0.0.1) (3.0.0)
+Collecting iniconfig>=2 (from pytest>=7.0->triton-inference-kit==0.0.1)
+  Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+Collecting pluggy<2,>=1.6 (from pytest>=7.0->triton-inference-kit==0.0.1)
+  Using cached pluggy-1.7.0-py3-none-any.whl.metadata (5.0 kB)
+Requirement already satisfied: pygments>=2.15 in /usr/local/lib/python3.12/dist-packages (from pytest>=7.0->triton-inference-kit==0.0.1) (2.21.0)
+Requirement already satisfied: six>=1.6 in /usr/lib/python3/dist-packages (from python-dateutil>=2.7->matplotlib>=3.7->triton-inference-kit==0.0.1) (1.16.0)
+Requirement already satisfied: tzdata in /usr/local/lib/python3.12/dist-packages (from python-dateutil>=2.7->matplotlib>=3.7->triton-inference-kit==0.0.1) (2026.5)
+Requirement already satisfied: filelock in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (4.2.1)
+Requirement already satisfied: typing-extensions>=4.10.0 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (4.16.0)
+Requirement already satisfied: setuptools in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (81.0.0)
+Requirement already satisfied: sympy>=1.13.3 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (1.14.0)
+Requirement already satisfied: networkx in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (3.6.1)
+Requirement already satisfied: jinja2 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (3.1.6)
+Requirement already satisfied: fsspec in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (2026.7.0)
+Requirement already satisfied: nvidia-cuda-nvrtc-cu12==12.8.93 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (12.8.93)
+Requirement already satisfied: nvidia-cuda-runtime-cu12==12.8.90 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (12.8.90)
+Requirement already satisfied: nvidia-cuda-cupti-cu12==12.8.90 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (12.8.90)
+Requirement already satisfied: nvidia-cudnn-cu12==9.10.2.21 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (9.10.2.21)
+Requirement already satisfied: nvidia-cublas-cu12==12.8.4.1 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (12.8.4.1)
+Requirement already satisfied: nvidia-cufft-cu12==11.3.3.83 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (11.3.3.83)
+Requirement already satisfied: nvidia-curand-cu12==10.3.9.90 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (10.3.9.90)
+Requirement already satisfied: nvidia-cusolver-cu12==11.7.3.90 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (11.7.3.90)
+Requirement already satisfied: nvidia-cusparse-cu12==12.5.8.93 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (12.5.8.93)
+Requirement already satisfied: nvidia-cusparselt-cu12==0.7.1 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (0.7.1)
+Requirement already satisfied: nvidia-nccl-cu12==2.27.3 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (2.27.3)
+Requirement already satisfied: nvidia-nvtx-cu12==12.8.90 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (12.8.90)
+Requirement already satisfied: nvidia-nvjitlink-cu12==12.8.93 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (12.8.93)
+Requirement already satisfied: nvidia-cufile-cu12==1.13.1.3 in /usr/local/lib/python3.12/dist-packages (from torch>=2.1->triton-inference-kit==0.0.1) (1.13.1.3)
+Requirement already satisfied: mpmath<1.4,>=1.1.0 in /usr/local/lib/python3.12/dist-packages (from sympy>=1.13.3->torch>=2.1->triton-inference-kit==0.0.1) (1.3.0)
+Collecting huggingface-hub<3.0,>=1.31.0 (from transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading huggingface_hub-2.4.0-py3-none-any.whl.metadata (16 kB)
+Requirement already satisfied: pyyaml>=5.1 in /usr/local/lib/python3.12/dist-packages (from transformers>=4.56->triton-inference-kit==0.0.1) (6.0.3)
+Collecting regex>=2025.10.22 (from transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading regex-2026.11.7-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (40 kB)
+Collecting tokenizers<0.24.0,>=0.23.1 (from transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading tokenizers-0.23.3-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (9.8 kB)
+Collecting typer (from transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading typer-0.28.0-py3-none-any.whl.metadata (16 kB)
+Collecting safetensors>=0.8.0 (from transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading safetensors-0.8.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.2 kB)
+Collecting tqdm>=4.60 (from transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading tqdm-4.70.1-py3-none-any.whl.metadata (57 kB)
+Collecting click<9.0.0,>=8.4.2 (from huggingface-hub<3.0,>=1.31.0->transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading click-8.5.1-py3-none-any.whl.metadata (2.6 kB)
+Collecting hf-xet<2.0.0,>=1.6.0 (from huggingface-hub<3.0,>=1.31.0->transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading hf_xet-1.8.0-cp38-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (4.9 kB)
+Collecting httpx2<3,>=2.0.0 (from huggingface-hub<3.0,>=1.31.0->transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading httpx2-2.16.0-py3-none-any.whl.metadata (10 kB)
+Requirement already satisfied: anyio>=4.10 in /usr/local/lib/python3.12/dist-packages (from httpx2<3,>=2.0.0->huggingface-hub<3.0,>=1.31.0->transformers>=4.56->triton-inference-kit==0.0.1) (4.15.1)
+Collecting httpcore2==2.16.0 (from httpx2<3,>=2.0.0->huggingface-hub<3.0,>=1.31.0->transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading httpcore2-2.16.0-py3-none-any.whl.metadata (27 kB)
+Requirement already satisfied: idna>=3.18 in /usr/local/lib/python3.12/dist-packages (from httpx2<3,>=2.0.0->huggingface-hub<3.0,>=1.31.0->transformers>=4.56->triton-inference-kit==0.0.1) (3.20)
+Collecting truststore>=0.10 (from httpx2<3,>=2.0.0->huggingface-hub<3.0,>=1.31.0->transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading truststore-0.10.5-py3-none-any.whl.metadata (4.5 kB)
+Requirement already satisfied: h11>=0.16 in /usr/local/lib/python3.12/dist-packages (from httpcore2==2.16.0->httpx2<3,>=2.0.0->huggingface-hub<3.0,>=1.31.0->transformers>=4.56->triton-inference-kit==0.0.1) (0.16.0)
+Requirement already satisfied: MarkupSafe>=2.0 in /usr/local/lib/python3.12/dist-packages (from jinja2->torch>=2.1->triton-inference-kit==0.0.1) (3.0.4)
+Collecting shellingham>=1.3.0 (from typer->transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading shellingham-1.5.4-py2.py3-none-any.whl.metadata (3.5 kB)
+Collecting rich>=13.8.0 (from typer->transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading rich-15.0.0-py3-none-any.whl.metadata (18 kB)
+Collecting annotated-doc>=0.0.2 (from typer->transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+Collecting markdown-it-py>=2.2.0 (from rich>=13.8.0->typer->transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading markdown_it_py-4.2.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich>=13.8.0->typer->transformers>=4.56->triton-inference-kit==0.0.1)
+  Downloading mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+Downloading matplotlib-3.11.2-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (9.9 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 9.9/9.9 MB 99.7 MB/s  0:00:00
+Downloading contourpy-1.4.0-cp312-cp312-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (383 kB)
+Downloading cycler-0.12.1-py3-none-any.whl (8.3 kB)
+Downloading fonttools-4.68.0-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (5.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.4/5.4 MB 386.9 MB/s  0:00:00
+Downloading kiwisolver-1.5.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (1.5 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.5/1.5 MB 272.3 MB/s  0:00:00
+Downloading ninja-1.13.2-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (183 kB)
+Downloading pytest-9.2.0-py3-none-any.whl (411 kB)
+Using cached pluggy-1.7.0-py3-none-any.whl (27 kB)
+Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+Downloading transformers-5.22.2-py3-none-any.whl (13.1 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 13.1/13.1 MB 280.7 MB/s  0:00:00
+Downloading huggingface_hub-2.4.0-py3-none-any.whl (857 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 857.0/857.0 kB 107.7 MB/s  0:00:00
+Downloading click-8.5.1-py3-none-any.whl (126 kB)
+Downloading hf_xet-1.8.0-cp38-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.3 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.3/4.3 MB 370.2 MB/s  0:00:00
+Downloading httpx2-2.16.0-py3-none-any.whl (97 kB)
+Downloading httpcore2-2.16.0-py3-none-any.whl (85 kB)
+Downloading tokenizers-0.23.3-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.4 MB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.4/3.4 MB 374.9 MB/s  0:00:00
+Downloading regex-2026.11.7-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (808 kB)
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 808.4/808.4 kB 191.2 MB/s  0:00:00
+Downloading safetensors-0.8.0-cp310-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (516 kB)
+Downloading tqdm-4.70.1-py3-none-any.whl (80 kB)
+Downloading truststore-0.10.5-py3-none-any.whl (19 kB)
+Downloading typer-0.28.0-py3-none-any.whl (123 kB)
+Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+Downloading rich-15.0.0-py3-none-any.whl (310 kB)
+Downloading markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+Downloading shellingham-1.5.4-py2.py3-none-any.whl (9.8 kB)
+Building wheels for collected packages: triton-inference-kit
+  Building editable for triton-inference-kit (pyproject.toml): started
+  Building editable for triton-inference-kit (pyproject.toml): finished with status 'done'
+  Created wheel for triton-inference-kit: filename=triton_inference_kit-0.0.1-py3-none-any.whl size=12543 sha256=d6df389c53597834fe2d355806d3442477bd4091599babc8c16ccf31556be9b3
+  Stored in directory: /tmp/pip-ephem-wheel-cache-yj0xxi8b/wheels/15/90/22/7880d952ca25facda30ef9185eb7e01a397807c46a0e209d1d
+Successfully built triton-inference-kit
+Installing collected packages: truststore, tqdm, shellingham, safetensors, regex, pluggy, ninja, mdurl, kiwisolver, iniconfig, hf-xet, fonttools, cycler, contourpy, click, annotated-doc, pytest, matplotlib, markdown-it-py, httpcore2, rich, httpx2, typer, triton-inference-kit, huggingface-hub, tokenizers, transformers
+
+Successfully installed annotated-doc-0.0.5 click-8.5.1 contourpy-1.4.0 cycler-0.12.1 fonttools-4.68.0 hf-xet-1.8.0 httpcore2-2.16.0 httpx2-2.16.0 huggingface-hub-2.4.0 iniconfig-2.3.1 kiwisolver-1.5.1 markdown-it-py-4.2.0 matplotlib-3.11.2 mdurl-0.1.2 ninja-1.13.2 pluggy-1.7.0 pytest-9.2.0 regex-2026.11.7 rich-15.0.0 safetensors-0.8.0 shellingham-1.5.4 tokenizers-0.23.3 tqdm-4.70.1 transformers-5.22.2 triton-inference-kit-0.0.1 truststore-0.10.5 typer-0.28.0
+
+after pip install -e '.[dev,bench]':
+torch      : 2.8.0+cu128 | triton 3.4.0 | transformers 5.22.2
+
+=== [21:37:08] pytest tests/test_rmsnorm.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 41 items
+
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype0-shape0] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype0-shape1] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype0-shape2] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype0-shape3] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype0-shape4] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype0-shape5] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype1-shape0] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype1-shape1] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype1-shape2] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype1-shape3] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype1-shape4] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype1-shape5] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype2-shape0] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype2-shape1] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype2-shape2] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype2-shape3] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype2-shape4] PASSED
+tests/test_rmsnorm.py::test_ref_matches_torch_functional[dtype2-shape5] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype0-shape0] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype0-shape1] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype0-shape2] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype0-shape3] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype0-shape4] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype0-shape5] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype1-shape0] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype1-shape1] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype1-shape2] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype1-shape3] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype1-shape4] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype1-shape5] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype2-shape0] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype2-shape1] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype2-shape2] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype2-shape3] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype2-shape4] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_matches_reference[dtype2-shape5] PASSED
+tests/test_rmsnorm.py::test_rmsnorm_preserves_shape_and_dtype PASSED
+tests/test_rmsnorm.py::test_rmsnorm_rejects_cpu_tensors PASSED
+tests/test_rmsnorm.py::test_rmsnorm_rejects_shape_mismatch PASSED
+tests/test_rmsnorm.py::test_rmsnorm_rejects_noncontiguous_weight PASSED
+tests/test_rmsnorm.py::test_rmsnorm_rejects_dtype_mismatch PASSED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_rmsnorm.xml -
+============================== 41 passed in 4.17s ==============================
+
+=== [21:37:13] pytest tests/test_rmsnorm_cuda.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 97 items
+
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-1] W1107 21:37:16.970000 905 torch/utils/cpp_extension.py:2425] TORCH_CUDA_ARCH_LIST is not set, all archs for visible cards are included for compilation. 
+W1107 21:37:16.970000 905 torch/utils/cpp_extension.py:2425] If this is not desired, please set os.environ['TORCH_CUDA_ARCH_LIST'] to specific architectures.
+PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-3] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-33] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-1022] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-1025] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-2048] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-5120] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-1-11008] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-1] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-3] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-33] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-1022] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-1025] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-2048] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-5120] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype0-17-11008] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-1] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-3] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-33] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-1022] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-1025] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-2048] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-5120] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-1-11008] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-1] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-3] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-33] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-1022] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-1025] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-2048] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-5120] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype1-17-11008] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-1] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-3] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-33] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-1022] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-1025] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-2048] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-5120] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-1-11008] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-1] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-3] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-33] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-1022] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-1025] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-2048] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-5120] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_fp32_reference[dtype2-17-11008] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype0-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype0-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype0-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype0-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype1-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype1-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype1-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype1-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype2-1023] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype2-4096] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype2-4097] PASSED
+tests/test_rmsnorm_cuda.py::test_matches_triton_kernel[dtype2-8192] PASSED
+tests/test_rmsnorm_cuda.py::test_misaligned_input_uses_scalar_fallback[dtype0] PASSED
+tests/test_rmsnorm_cuda.py::test_misaligned_input_uses_scalar_fallback[dtype1] PASSED
+tests/test_rmsnorm_cuda.py::test_misaligned_input_uses_scalar_fallback[dtype2] PASSED
+tests/test_rmsnorm_cuda.py::test_misaligned_weight_uses_scalar_fallback[dtype0] PASSED
+tests/test_rmsnorm_cuda.py::test_misaligned_weight_uses_scalar_fallback[dtype1] PASSED
+tests/test_rmsnorm_cuda.py::test_misaligned_weight_uses_scalar_fallback[dtype2] PASSED
+tests/test_rmsnorm_cuda.py::test_llama_shaped_3d_input PASSED
+tests/test_rmsnorm_cuda.py::test_eps_is_applied PASSED
+tests/test_rmsnorm_cuda.py::test_empty_input PASSED
+tests/test_rmsnorm_cuda.py::test_rejects_cpu_tensors PASSED
+tests/test_rmsnorm_cuda.py::test_rejects_shape_mismatch PASSED
+tests/test_rmsnorm_cuda.py::test_rejects_dtype_mismatch PASSED
+tests/test_rmsnorm_cuda.py::test_rejects_unsupported_dtype PASSED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_rmsnorm_cuda.xml -
+============================= 97 passed in 52.54s ==============================
+
+=== [21:38:07] pytest tests/test_rope.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 33 items
+
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype0-config0] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype0-config1] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype0-config2] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype0-config3] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype1-config0] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype1-config1] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype1-config2] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype1-config3] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype2-config0] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype2-config1] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype2-config2] PASSED
+tests/test_rope.py::test_ref_matches_independent_hf_impl[dtype2-config3] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype0-config0] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype0-config1] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype0-config2] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype0-config3] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype1-config0] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype1-config1] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype1-config2] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype1-config3] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype2-config0] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype2-config1] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype2-config2] PASSED
+tests/test_rope.py::test_rope_matches_reference[dtype2-config3] PASSED
+tests/test_rope.py::test_rope_rejects_odd_head_dim PASSED
+tests/test_rope.py::test_rope_rejects_shape_mismatch PASSED
+tests/test_rope.py::test_rope_accepts_transposed_views[dtype0] PASSED
+tests/test_rope.py::test_rope_accepts_transposed_views[dtype1] PASSED
+tests/test_rope.py::test_rope_accepts_transposed_views[dtype2] PASSED
+tests/test_rope.py::test_rope_broadcasts_batch1_cos_sin[dtype0] PASSED
+tests/test_rope.py::test_rope_broadcasts_batch1_cos_sin[dtype1] PASSED
+tests/test_rope.py::test_rope_broadcasts_batch1_cos_sin[dtype2] PASSED
+tests/test_rope.py::test_rope_rejects_cos_sin_batch_mismatch PASSED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_rope.xml -
+============================== 33 passed in 8.44s ==============================
+
+=== [21:38:17] pytest tests/test_softmax.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 27 items
+
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype0-shape0] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype0-shape1] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype0-shape2] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype0-shape3] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype0-shape4] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype1-shape0] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype1-shape1] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype1-shape2] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype1-shape3] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype1-shape4] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype2-shape0] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype2-shape1] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype2-shape2] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype2-shape3] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype2-shape4] PASSED
+tests/test_softmax.py::test_online_softmax_large_positive_values[dtype0] PASSED
+tests/test_softmax.py::test_online_softmax_large_positive_values[dtype1] PASSED
+tests/test_softmax.py::test_online_softmax_large_positive_values[dtype2] PASSED
+tests/test_softmax.py::test_online_softmax_large_negative_values[dtype0] PASSED
+tests/test_softmax.py::test_online_softmax_large_negative_values[dtype1] PASSED
+tests/test_softmax.py::test_online_softmax_large_negative_values[dtype2] PASSED
+tests/test_softmax.py::test_online_softmax_leading_neg_inf_block[dtype0] PASSED
+tests/test_softmax.py::test_online_softmax_leading_neg_inf_block[dtype1] PASSED
+tests/test_softmax.py::test_online_softmax_leading_neg_inf_block[dtype2] PASSED
+tests/test_softmax.py::test_online_softmax_single_element_row PASSED
+tests/test_softmax.py::test_online_softmax_preserves_shape_and_dtype PASSED
+tests/test_softmax.py::test_online_softmax_rejects_cpu_tensors PASSED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_softmax.xml -
+============================== 27 passed in 4.21s ==============================
+
+=== [21:38:22] pytest tests/test_swiglu.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 19 items
+
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype0-shape0] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype0-shape1] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype0-shape2] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype0-shape3] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype0-shape4] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype1-shape0] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype1-shape1] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype1-shape2] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype1-shape3] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype1-shape4] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype2-shape0] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype2-shape1] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype2-shape2] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype2-shape3] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype2-shape4] PASSED
+tests/test_swiglu.py::test_swiglu_preserves_shape_and_dtype PASSED
+tests/test_swiglu.py::test_swiglu_rejects_shape_mismatch PASSED
+tests/test_swiglu.py::test_swiglu_rejects_dtype_mismatch PASSED
+tests/test_swiglu.py::test_swiglu_rejects_cpu_tensors PASSED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_swiglu.xml -
+============================== 19 passed in 2.86s ==============================
+
+=== [21:38:26] pytest tests/test_vector_add.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 9 items
+
+tests/test_vector_add.py::test_add_matches_pytorch[dtype0-128] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype0-1024] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype0-10000] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype0-1000000] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype1-128] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype1-1024] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype1-10000] PASSED
+tests/test_vector_add.py::test_add_matches_pytorch[dtype1-1000000] PASSED
+tests/test_vector_add.py::test_add_rejects_cpu_tensors PASSED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_vector_add.xml -
+============================== 9 passed in 2.53s ===============================
+
+=== [21:38:30] pytest tests/test_e2e_llama.py ===
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 6 items
+
+tests/test_e2e_llama.py::test_patched_logits_match_stock[random-init LlamaConfig-triton] 
+[random-init LlamaConfig | rmsnorm=triton] max |patched - stock| logit = 3.296e-03 (max |logit| 2.23; atol 0.02, rtol 0.02), argmax agreement 99.8%, kernel calls = {'rmsnorm': 9, 'swiglu': 4, 'rope': 4, 'softmax': 4}
+PASSED
+tests/test_e2e_llama.py::test_patched_logits_match_stock[random-init LlamaConfig-cuda] W1107 21:38:38.933000 1848 torch/utils/cpp_extension.py:2425] TORCH_CUDA_ARCH_LIST is not set, all archs for visible cards are included for compilation. 
+W1107 21:38:38.933000 1848 torch/utils/cpp_extension.py:2425] If this is not desired, please set os.environ['TORCH_CUDA_ARCH_LIST'] to specific architectures.
+
+[random-init LlamaConfig | rmsnorm=cuda] max |patched - stock| logit = 3.174e-03 (max |logit| 2.23; atol 0.02, rtol 0.02), argmax agreement 100.0%, kernel calls = {'rmsnorm': 9, 'swiglu': 4, 'rope': 4, 'softmax': 4}
+PASSED
+tests/test_e2e_llama.py::test_patch_is_reverted_on_exit[random-init LlamaConfig] PASSED
+tests/test_e2e_llama.py::test_patched_logits_match_stock[meta-llama/Llama-3.2-1B-triton] SKIPPED
+tests/test_e2e_llama.py::test_patched_logits_match_stock[meta-llama/Llama-3.2-1B-cuda] SKIPPED
+tests/test_e2e_llama.py::test_patch_is_reverted_on_exit[meta-llama/Llama-3.2-1B] SKIPPED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_e2e_llama.xml -
+=========================== short test summary info ============================
+SKIPPED [2] tests/test_e2e_llama.py:146: HF_TOKEN not set; skipping the gated meta-llama/Llama-3.2-1B
+SKIPPED [1] tests/test_e2e_llama.py:185: HF_TOKEN not set; skipping the gated meta-llama/Llama-3.2-1B
+========================= 3 passed, 3 skipped in 8.69s =========================
+
+=== [21:38:40] bench: vector_add (float16, bfloat16) ===
+GPU: NVIDIA A100-SXM4-80GB | driver 595.91.07 | CUDA 12.8 | torch 2.8.0+cu128 | triton 3.4.0
+Peak HBM bandwidth: 2039 GB/s (device attributes: 2 x mem_clock_rate x mem_bus_width)
+
+=== vector_add, dtype=float16 ===
+                     shape |    dtype |  triton GB/s |   eager GB/s | torch.compile GB/s |  triton ms |   eager ms | torch.compile ms | triton %peak |    x eager | x torch.compile
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                    n=2^22 |  float16 |        974.5 |       1000.5 |              986.7 |     0.0258 |     0.0252 |           0.0255 |        47.8% |      0.97x |           0.99x
+                    n=2^24 |  float16 |       1456.4 |       1453.7 |             1455.7 |     0.0691 |     0.0692 |           0.0692 |        71.4% |      1.00x |           1.00x
+                    n=2^26 |  float16 |       1696.0 |       1699.6 |             1695.8 |     0.2374 |     0.2369 |           0.2374 |        83.2% |      1.00x |           1.00x
+Chart saved to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07_vector_add_float16.png
+
+=== vector_add, dtype=bfloat16 ===
+                     shape |    dtype |  triton GB/s |   eager GB/s | torch.compile GB/s |  triton ms |   eager ms | torch.compile ms | triton %peak |    x eager | x torch.compile
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                    n=2^22 | bfloat16 |        988.0 |        983.0 |              986.7 |     0.0255 |     0.0256 |           0.0255 |        48.5% |      1.01x |           1.00x
+                    n=2^24 | bfloat16 |       1441.0 |       1440.4 |             1457.0 |     0.0699 |     0.0699 |           0.0691 |        70.7% |      1.00x |           0.99x
+                    n=2^26 | bfloat16 |       1701.1 |       1695.1 |             1701.1 |     0.2367 |     0.2375 |           0.2367 |        83.4% |      1.00x |           1.00x
+Chart saved to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07_vector_add_bfloat16.png
+Results written to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07.json (section 'vector_add')
+
+=== [21:38:52] bench: rmsnorm (float16, bfloat16) ===
+GPU: NVIDIA A100-SXM4-80GB | driver 595.91.07 | CUDA 12.8 | torch 2.8.0+cu128 | triton 3.4.0
+Peak HBM bandwidth: 2039 GB/s (device attributes: 2 x mem_clock_rate x mem_bus_width)
+
+=== rmsnorm, dtype=float16 ===
+W1107 21:38:58.461000 2439 torch/utils/cpp_extension.py:2425] TORCH_CUDA_ARCH_LIST is not set, all archs for visible cards are included for compilation. 
+W1107 21:38:58.461000 2439 torch/utils/cpp_extension.py:2425] If this is not desired, please set os.environ['TORCH_CUDA_ARCH_LIST'] to specific architectures.
+                     shape |    dtype |  triton GB/s |    cuda GB/s |   eager GB/s | F.rms_norm GB/s | torch.compile GB/s |  triton ms |    cuda ms |   eager ms | F.rms_norm ms | torch.compile ms | triton %peak |     x cuda |    x eager | x F.rms_norm | x torch.compile
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            M=16384 N=1024 |  float16 |       1311.6 |       1307.1 |        159.7 |           137.7 |             1320.7 |     0.0512 |     0.0513 |     0.4202 |        0.4874 |           0.0508 |        64.3% |      1.00x |      8.21x |        9.53x |           0.99x
+            M=16384 N=2048 |  float16 |       1532.5 |       1505.0 |        188.1 |           145.5 |             1459.4 |     0.0876 |     0.0892 |     0.7137 |        0.9225 |           0.0920 |        75.2% |      1.02x |      8.15x |       10.53x |           1.05x
+            M=16384 N=4096 |  float16 |       1637.2 |       1625.7 |        195.1 |           149.7 |             1672.4 |     0.1640 |     0.1651 |     1.3760 |        1.7936 |           0.1605 |        80.3% |      1.01x |      8.39x |       10.94x |           0.98x
+            M=16384 N=5120 |  float16 |       1654.9 |       1555.6 |        197.1 |           151.0 |             1716.8 |     0.2028 |     0.2157 |     1.7027 |        2.2227 |           0.1955 |        81.2% |      1.06x |      8.40x |       10.96x |           0.96x
+            M=16384 N=8192 |  float16 |       1693.0 |       1674.1 |        199.7 |           152.9 |             1729.1 |     0.3171 |     0.3207 |     2.6882 |        3.5114 |           0.3105 |        83.0% |      1.01x |      8.48x |       11.07x |           0.98x
+Chart saved to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07_rmsnorm_float16.png
+
+=== rmsnorm, dtype=bfloat16 ===
+                     shape |    dtype |  triton GB/s |    cuda GB/s |   eager GB/s | F.rms_norm GB/s | torch.compile GB/s |  triton ms |    cuda ms |   eager ms | F.rms_norm ms | torch.compile ms | triton %peak |     x cuda |    x eager | x F.rms_norm | x torch.compile
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            M=16384 N=1024 | bfloat16 |       1332.4 |       1332.4 |        174.7 |           137.0 |             1328.2 |     0.0504 |     0.0504 |     0.3841 |        0.4898 |           0.0505 |        65.3% |      1.00x |      7.63x |        9.72x |           1.00x
+            M=16384 N=2048 | bfloat16 |       1530.5 |       1505.0 |        187.1 |           144.6 |             1464.0 |     0.0877 |     0.0892 |     0.7173 |        0.9281 |           0.0917 |        75.1% |      1.02x |      8.18x |       10.58x |           1.05x
+            M=16384 N=4096 | bfloat16 |       1628.3 |       1626.4 |        194.1 |           148.9 |             1678.4 |     0.1649 |     0.1651 |     1.3831 |        1.8033 |           0.1599 |        79.9% |      1.00x |      8.39x |       10.94x |           0.97x
+            M=16384 N=5120 | bfloat16 |       1651.9 |       1557.5 |        195.9 |           149.9 |             1714.8 |     0.2031 |     0.2154 |     1.7129 |        2.2381 |           0.1957 |        81.0% |      1.06x |      8.43x |       11.02x |           0.96x
+            M=16384 N=8192 | bfloat16 |       1692.0 |       1674.4 |        198.6 |           151.8 |             1728.4 |     0.3173 |     0.3206 |     2.7029 |        3.5373 |           0.3106 |        83.0% |      1.01x |      8.52x |       11.15x |           0.98x
+Chart saved to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07_rmsnorm_bfloat16.png
+Results written to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07.json (section 'rmsnorm')
+
+=== [21:39:11] bench: swiglu (float16, bfloat16) ===
+GPU: NVIDIA A100-SXM4-80GB | driver 595.91.07 | CUDA 12.8 | torch 2.8.0+cu128 | triton 3.4.0
+Peak HBM bandwidth: 2039 GB/s (device attributes: 2 x mem_clock_rate x mem_bus_width)
+
+=== swiglu, dtype=float16 ===
+                     shape |    dtype |  triton GB/s |   eager GB/s | torch.compile GB/s |  triton ms |   eager ms | torch.compile ms | triton %peak |    x eager | x torch.compile
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                 8192x4096 |  float16 |       1587.5 |        954.0 |             1591.2 |     0.1268 |     0.2110 |           0.1265 |        77.9% |      1.66x |           1.00x
+                8192x11008 |  float16 |       1723.6 |       1019.8 |             1722.3 |     0.3139 |     0.5306 |           0.3141 |        84.5% |      1.69x |           1.00x
+                8192x13824 |  float16 |       1734.8 |       1028.4 |             1732.2 |     0.3917 |     0.6607 |           0.3923 |        85.1% |      1.69x |           1.00x
+                8192x28672 |  float16 |       1768.8 |       1040.9 |             1769.5 |     0.7968 |     1.3539 |           0.7964 |        86.7% |      1.70x |           1.00x
+Chart saved to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07_swiglu_float16.png
+
+=== swiglu, dtype=bfloat16 ===
+                     shape |    dtype |  triton GB/s |   eager GB/s | torch.compile GB/s |  triton ms |   eager ms | torch.compile ms | triton %peak |    x eager | x torch.compile
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                 8192x4096 | bfloat16 |       1602.1 |        961.6 |             1602.5 |     0.1257 |     0.2094 |           0.1256 |        78.6% |      1.67x |           1.00x
+                8192x11008 | bfloat16 |       1727.3 |       1021.2 |             1723.7 |     0.3132 |     0.5299 |           0.3139 |        84.7% |      1.69x |           1.00x
+                8192x13824 | bfloat16 |       1734.4 |       1029.3 |             1734.2 |     0.3918 |     0.6602 |           0.3918 |        85.1% |      1.69x |           1.00x
+                8192x28672 | bfloat16 |       1764.7 |       1042.1 |             1765.6 |     0.7986 |     1.3524 |           0.7982 |        86.5% |      1.69x |           1.00x
+Chart saved to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07_swiglu_bfloat16.png
+Results written to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07.json (section 'swiglu')
+
+=== [21:39:25] bench: rope (float16, bfloat16) ===
+GPU: NVIDIA A100-SXM4-80GB | driver 595.91.07 | CUDA 12.8 | torch 2.8.0+cu128 | triton 3.4.0
+Peak HBM bandwidth: 2039 GB/s (device attributes: 2 x mem_clock_rate x mem_bus_width)
+
+=== rope, dtype=float16 ===
+                     shape |    dtype |  triton GB/s |   eager GB/s | torch.compile GB/s |  triton ms |   eager ms | torch.compile ms | triton %peak |    x eager | x torch.compile
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+     LLaMA-2 7B MHA S=8192 |  float16 |        395.6 |        190.5 |             1602.3 |     0.6891 |     1.4314 |           0.1701 |        19.4% |      2.08x |           0.25x
+     LLaMA-3 8B GQA S=8192 |  float16 |        480.7 |        189.1 |             1507.2 |     0.3578 |     0.9093 |           0.1141 |        23.6% |      2.54x |           0.32x
+    LLaMA-3 70B GQA S=8192 |  float16 |        482.2 |        192.6 |             1582.3 |     0.6350 |     1.5897 |           0.1935 |        23.6% |      2.50x |           0.30x
+ LLaMA-3 8B GQA B=8 S=2048 |  float16 |        488.5 |        189.3 |             1616.0 |     0.7040 |     1.8173 |           0.2128 |        24.0% |      2.58x |           0.30x
+Chart saved to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07_rope_float16.png
+
+=== rope, dtype=bfloat16 ===
+                     shape |    dtype |  triton GB/s |   eager GB/s | torch.compile GB/s |  triton ms |   eager ms | torch.compile ms | triton %peak |    x eager | x torch.compile
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+     LLaMA-2 7B MHA S=8192 | bfloat16 |        478.1 |        190.5 |             1588.2 |     0.5702 |     1.4312 |           0.1717 |        23.4% |      2.51x |           0.30x
+     LLaMA-3 8B GQA S=8192 | bfloat16 |        476.8 |        188.6 |             1499.4 |     0.3606 |     0.9117 |           0.1147 |        23.4% |      2.53x |           0.32x
+    LLaMA-3 70B GQA S=8192 | bfloat16 |        478.4 |        192.1 |             1588.6 |     0.6400 |     1.5942 |           0.1927 |        23.5% |      2.49x |           0.30x
+ LLaMA-3 8B GQA B=8 S=2048 | bfloat16 |        484.5 |        188.8 |             1601.9 |     0.7099 |     1.8219 |           0.2147 |        23.8% |      2.57x |           0.30x
+Chart saved to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07_rope_bfloat16.png
+Results written to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07.json (section 'rope')
+
+=== [21:39:46] bench: softmax (float16, bfloat16) ===
+GPU: NVIDIA A100-SXM4-80GB | driver 595.91.07 | CUDA 12.8 | torch 2.8.0+cu128 | triton 3.4.0
+Peak HBM bandwidth: 2039 GB/s (device attributes: 2 x mem_clock_rate x mem_bus_width)
+
+=== softmax, dtype=float16 ===
+                     shape |    dtype |  triton GB/s |   eager GB/s | F.softmax GB/s | torch.compile GB/s |  triton ms |   eager ms | F.softmax ms | torch.compile ms | triton %peak |    x eager | x F.softmax | x torch.compile
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            M=32768 N=1024 |  float16 |       1321.5 |        237.6 |         1095.1 |             1378.8 |     0.1016 |     0.5649 |       0.1226 |           0.0973 |        64.8% |      5.56x |       1.21x |           0.96x
+            M=16384 N=2048 |  float16 |       1404.7 |        264.9 |          967.9 |             1173.2 |     0.0956 |     0.5067 |       0.1387 |           0.1144 |        68.9% |      5.30x |       1.45x |           1.20x
+             M=8192 N=4096 |  float16 |       1343.3 |        256.3 |          706.6 |             1452.3 |     0.0999 |     0.5237 |       0.1900 |           0.0924 |        65.9% |      5.24x |       1.90x |           0.92x
+            M=2048 N=16384 |  float16 |        959.7 |        264.0 |         1159.9 |             1469.1 |     0.1399 |     0.5083 |       0.1157 |           0.0914 |        47.1% |      3.63x |       0.83x |           0.65x
+            M=4096 N=32768 |  float16 |       1072.6 |        291.2 |         1173.8 |             1322.2 |     0.5005 |     1.8434 |       0.4574 |           0.4060 |        52.6% |      3.68x |       0.91x |           0.81x
+Chart saved to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07_softmax_float16.png
+
+=== softmax, dtype=bfloat16 ===
+                     shape |    dtype |  triton GB/s |   eager GB/s | F.softmax GB/s | torch.compile GB/s |  triton ms |   eager ms | F.softmax ms | torch.compile ms | triton %peak |    x eager | x F.softmax | x torch.compile
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            M=32768 N=1024 | bfloat16 |       1447.8 |        264.5 |         1195.1 |             1383.3 |     0.0927 |     0.5074 |       0.1123 |           0.0970 |        71.0% |      5.47x |       1.21x |           1.05x
+            M=16384 N=2048 | bfloat16 |       1411.7 |        264.3 |          964.3 |             1137.9 |     0.0951 |     0.5079 |       0.1392 |           0.1180 |        69.2% |      5.34x |       1.46x |           1.24x
+             M=8192 N=4096 | bfloat16 |       1334.3 |        256.4 |          709.9 |             1399.5 |     0.1006 |     0.5235 |       0.1891 |           0.0959 |        65.4% |      5.20x |       1.88x |           0.95x
+            M=2048 N=16384 | bfloat16 |        954.9 |        263.1 |         1138.2 |             1426.1 |     0.1406 |     0.5102 |       0.1179 |           0.0941 |        46.8% |      3.63x |       0.84x |           0.67x
+            M=4096 N=32768 | bfloat16 |       1071.8 |        290.1 |         1159.3 |             1302.6 |     0.5009 |     1.8509 |       0.4631 |           0.4122 |        52.6% |      3.69x |       0.92x |           0.82x
+Chart saved to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07_softmax_bfloat16.png
+Results written to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07.json (section 'softmax')
+
+=== [21:40:02] bench: LLaMA end to end, stock vs patched (float16, bfloat16) ===
+GPU: NVIDIA A100-SXM4-80GB | driver 595.91.07 | CUDA 12.8 | torch 2.8.0+cu128 | triton 3.4.0
+Loading TinyLlama/TinyLlama-1.1B-Chat-v1.0 in float16 ...
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights:  32%|███▏      | 64/201 [00:00<00:00, 637.90it/s]Loading weights:  65%|██████▌   | 131/201 [00:00<00:00, 654.56it/s]Loading weights:  98%|█████████▊| 197/201 [00:00<00:00, 641.53it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 655.36it/s]
+stock ...
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+patched (rmsnorm=triton) ...
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+patched (rmsnorm=cuda) ...
+W1107 21:40:39.970000 4431 torch/utils/cpp_extension.py:2425] TORCH_CUDA_ARCH_LIST is not set, all archs for visible cards are included for compilation. 
+W1107 21:40:39.970000 4431 torch/utils/cpp_extension.py:2425] If this is not desired, please set os.environ['TORCH_CUDA_ARCH_LIST'] to specific architectures.
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+
+=== e2e: TinyLlama/TinyLlama-1.1B-Chat-v1.0, float16, batch=1, prompt_len=512, new_tokens=128, median of 5 ===
+               variant |  prefill tok/s |  decode tok/s | prefill vs stock | decode vs stock
+--------------------------------------------------------------------------------------------
+                 stock |        27260.5 |          56.2 |           1.000x |          1.000x
+patched (rmsnorm=triton) |        28830.9 |          61.3 |           1.058x |          1.090x
+patched (rmsnorm=cuda) |        31984.5 |          68.9 |           1.173x |          1.225x
+Loading TinyLlama/TinyLlama-1.1B-Chat-v1.0 in bfloat16 ...
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights: 100%|██████████| 201/201 [00:00<00:00, 8285.55it/s]
+stock ...
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+patched (rmsnorm=triton) ...
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+patched (rmsnorm=cuda) ...
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+[transformers] Both `max_new_tokens` (=128) and `max_length`(=2048) seem to have been set. `max_new_tokens` will take precedence. Please refer to the documentation for more information. (https://huggingface.co/docs/transformers/main/en/main_classes/text_generation)
+
+=== e2e: TinyLlama/TinyLlama-1.1B-Chat-v1.0, bfloat16, batch=1, prompt_len=512, new_tokens=128, median of 5 ===
+               variant |  prefill tok/s |  decode tok/s | prefill vs stock | decode vs stock
+--------------------------------------------------------------------------------------------
+                 stock |        27852.8 |          56.6 |           1.000x |          1.000x
+patched (rmsnorm=triton) |        29207.9 |          61.6 |           1.049x |          1.089x
+patched (rmsnorm=cuda) |        32569.5 |          68.6 |           1.169x |          1.212x
+Results written to /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07.json (section 'e2e')
+
+=== [21:41:31] update README + docs from benchmarks/results ===
+Using /workspace/triton-inference-kit/benchmarks/results/A100-SXM4-80GB_2026-11-07.json (NVIDIA A100-SXM4-80GB, 2026-11-07); sections: ['vector_add', 'rmsnorm', 'swiglu', 'rope', 'softmax', 'e2e']; e2e test results: yes
+roadmap vector_add    tick: 1 test file(s) passed, results present
+roadmap rmsnorm       tick: 1 test file(s) passed, results present
+roadmap rmsnorm_cuda  tick: 1 test file(s) passed, results present
+roadmap swiglu        tick: 1 test file(s) passed, results present
+roadmap rope          tick: 1 test file(s) passed, results present
+roadmap softmax       tick: 1 test file(s) passed, results present
+roadmap benchmarks    tick: 6 test file(s) passed, results present
+roadmap e2e           tick: 1 test file(s) passed, results present
+updated README.md
+updated docs/rmsnorm.md
+updated docs/cuda_rmsnorm.md
+updated docs/swiglu.md
+updated docs/rope.md
+updated docs/softmax.md
+
+=== [21:41:31] summary ===
+results file : benchmarks/results/A100-SXM4-80GB_2026-11-07.json
+environment  : benchmarks/results/env.txt
+test logs    : benchmarks/results/tests/
+log          : benchmarks/results/run_2026-11-07_213642.log
+wall time    : 4 min 49 s
+
+--- README results block ---
+<!-- RESULTS:START -->
+**NVIDIA A100-SXM4-80GB** · driver 595.91.07 · CUDA 12.8 · torch 2.8.0+cu128 · triton 3.4.0 · 2026-11-07 · peak 2039 GB/s (device attributes: 2 x mem_clock_rate x mem_bus_width)
+
+One row per kernel and dtype (the largest shape benchmarked). `do_bench` median, L2 flushed before every timed call, bytes counted as the fused op's minimum HBM traffic for every column. Full tables per kernel are in `docs/`.
+
+| kernel | shape | dtype | Triton GB/s | % peak | vs eager | vs torch native | vs torch.compile | CUDA C++ GB/s |
+|---|---|---|---|---|---|---|---|---|
+| rmsnorm | M=16384 N=8192 | float16 | 1,693 | 83.0% | 8.48x | 11.07x | 0.98x | 1,674 |
+| rmsnorm | M=16384 N=8192 | bfloat16 | 1,692 | 83.0% | 8.52x | 11.15x | 0.98x | 1,674 |
+| swiglu | 8192x28672 | float16 | 1,769 | 86.7% | 1.70x | n/a | 1.00x |  |
+| swiglu | 8192x28672 | bfloat16 | 1,765 | 86.5% | 1.69x | n/a | 1.00x |  |
+| rope | LLaMA-3 8B GQA B=8 S=2048 | float16 | 489 | 24.0% | 2.58x | n/a | 0.30x |  |
+| rope | LLaMA-3 8B GQA B=8 S=2048 | bfloat16 | 484 | 23.8% | 2.57x | n/a | 0.30x |  |
+| softmax | M=4096 N=32768 | float16 | 1,073 | 52.6% | 3.68x | 0.91x | 0.81x |  |
+| softmax | M=4096 N=32768 | bfloat16 | 1,072 | 52.6% | 3.69x | 0.92x | 0.82x |  |
+| vector_add | n=2^26 | float16 | 1,696 | 83.2% | 1.00x | n/a | 1.00x |  |
+| vector_add | n=2^26 | bfloat16 | 1,701 | 83.4% | 1.00x | n/a | 1.00x |  |
+
+End-to-end correctness (`tests/test_e2e_llama.py`): logits of the model with all four kernels swapped in vs the stock model, float16, eager attention. **NVIDIA A100-SXM4-80GB** · 2026-11-07 · torch 2.8.0+cu128 · triton 3.4.0 · transformers 5.22.2.
+
+| model | RMSNorm | tokens | max abs logit diff | max abs logit | atol | rtol | within tolerance |
+|---|---|---|---|---|---|---|---|
+| random-init LlamaConfig | triton | 2x256 | 3.30e-03 | 2.23 | 0.02 | 0.02 | yes |
+| random-init LlamaConfig | cuda | 2x256 | 3.17e-03 | 2.23 | 0.02 | 0.02 | yes |
+
+End to end: HF `generate`, greedy, default SDPA attention (RMSNorm, SwiGLU and RoPE swapped); decode rate is (new tokens - 1) / (generate time - prefill time), median of 5 runs. transformers 5.22.2.
+
+| model | dtype | batch | prompt | new tokens | variant | prefill tok/s | decode tok/s | prefill vs stock | decode vs stock |
+|---|---|---|---|---|---|---|---|---|---|
+| TinyLlama/TinyLlama-1.1B-Chat-v1.0 | float16 | 1 | 512 | 128 | stock | 27,260.5 | 56.2 | 1.000x | 1.000x |
+| TinyLlama/TinyLlama-1.1B-Chat-v1.0 | float16 | 1 | 512 | 128 | patched (rmsnorm=triton) | 28,830.9 | 61.3 | 1.058x | 1.090x |
+| TinyLlama/TinyLlama-1.1B-Chat-v1.0 | float16 | 1 | 512 | 128 | patched (rmsnorm=cuda) | 31,984.5 | 68.9 | 1.173x | 1.225x |
+| TinyLlama/TinyLlama-1.1B-Chat-v1.0 | bfloat16 | 1 | 512 | 128 | stock | 27,852.8 | 56.6 | 1.000x | 1.000x |
+| TinyLlama/TinyLlama-1.1B-Chat-v1.0 | bfloat16 | 1 | 512 | 128 | patched (rmsnorm=triton) | 29,207.9 | 61.6 | 1.049x | 1.089x |
+| TinyLlama/TinyLlama-1.1B-Chat-v1.0 | bfloat16 | 1 | 512 | 128 | patched (rmsnorm=cuda) | 32,569.5 | 68.6 | 1.169x | 1.212x |
+<!-- RESULTS:END -->
+
+--- files changed ---
+ M README.md
+ M docs/cuda_rmsnorm.md
+ M docs/rmsnorm.md
+ M docs/rope.md
+ M docs/softmax.md
+ M docs/swiglu.md
+?? benchmarks/results/
+
+ALL STEPS PASSED. Review the diff, then commit and push (RUNPOD.md, step 6):
+  git add benchmarks/results docs README.md

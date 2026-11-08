@@ -1,0 +1,38 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 27 items
+
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype0-shape0] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype0-shape1] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype0-shape2] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype0-shape3] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype0-shape4] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype1-shape0] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype1-shape1] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype1-shape2] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype1-shape3] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype1-shape4] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype2-shape0] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype2-shape1] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype2-shape2] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype2-shape3] PASSED
+tests/test_softmax.py::test_online_softmax_matches_pytorch[dtype2-shape4] PASSED
+tests/test_softmax.py::test_online_softmax_large_positive_values[dtype0] PASSED
+tests/test_softmax.py::test_online_softmax_large_positive_values[dtype1] PASSED
+tests/test_softmax.py::test_online_softmax_large_positive_values[dtype2] PASSED
+tests/test_softmax.py::test_online_softmax_large_negative_values[dtype0] PASSED
+tests/test_softmax.py::test_online_softmax_large_negative_values[dtype1] PASSED
+tests/test_softmax.py::test_online_softmax_large_negative_values[dtype2] PASSED
+tests/test_softmax.py::test_online_softmax_leading_neg_inf_block[dtype0] PASSED
+tests/test_softmax.py::test_online_softmax_leading_neg_inf_block[dtype1] PASSED
+tests/test_softmax.py::test_online_softmax_leading_neg_inf_block[dtype2] PASSED
+tests/test_softmax.py::test_online_softmax_single_element_row PASSED
+tests/test_softmax.py::test_online_softmax_preserves_shape_and_dtype PASSED
+tests/test_softmax.py::test_online_softmax_rejects_cpu_tensors PASSED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_softmax.xml -
+============================== 27 passed in 4.21s ==============================

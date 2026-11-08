@@ -1,0 +1,54 @@
+{
+  "meta": {
+    "gpu": "NVIDIA A100-SXM4-80GB",
+    "date": "2026-11-07",
+    "torch": "2.8.0+cu128",
+    "cuda": "12.8",
+    "triton": "3.4.0",
+    "transformers": "5.22.2"
+  },
+  "cases": [
+    {
+      "model": "random-init LlamaConfig",
+      "dtype": "float16",
+      "rmsnorm_impl": "triton",
+      "tokens": [
+        2,
+        256
+      ],
+      "max_abs_diff": 0.0032958984375,
+      "max_abs_logit": 2.228515625,
+      "atol": 0.02,
+      "rtol": 0.02,
+      "within_tolerance": true,
+      "argmax_agreement": 0.998046875,
+      "kernel_calls": {
+        "rmsnorm": 9,
+        "swiglu": 4,
+        "rope": 4,
+        "softmax": 4
+      }
+    },
+    {
+      "model": "random-init LlamaConfig",
+      "dtype": "float16",
+      "rmsnorm_impl": "cuda",
+      "tokens": [
+        2,
+        256
+      ],
+      "max_abs_diff": 0.003173828125,
+      "max_abs_logit": 2.228515625,
+      "atol": 0.02,
+      "rtol": 0.02,
+      "within_tolerance": true,
+      "argmax_agreement": 1.0,
+      "kernel_calls": {
+        "rmsnorm": 9,
+        "swiglu": 4,
+        "rope": 4,
+        "softmax": 4
+      }
+    }
+  ]
+}

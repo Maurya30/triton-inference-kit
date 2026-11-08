@@ -78,7 +78,20 @@ unfused (`F.silu(gate) * up`), `torch.compile`. Median of `do_bench`, L2
 flushed before each timed call.
 
 <!-- RESULTS:START -->
-_pending A100 run. Filled from the newest `benchmarks/results/*.json` by `scripts/update_docs.py`._
+**NVIDIA A100-SXM4-80GB** · driver 595.91.07 · CUDA 12.8 · torch 2.8.0+cu128 · triton 3.4.0 · 2026-11-07 · peak 2039 GB/s (device attributes: 2 x mem_clock_rate x mem_bus_width)
+
+Timing: triton.testing.do_bench median; L2 flushed before each timed call. Bytes per call: read gate once + read up once + write out once; the same count is used for every column, so GB/s is *effective* bandwidth on a shared roofline axis.
+
+| shape | dtype | bytes/call | triton ms | triton GB/s | triton % peak | eager GB/s | torch.compile GB/s | triton vs eager | triton vs torch.compile |
+|---|---|---|---|---|---|---|---|---|---|
+| 8192x4096 | float16 | 192 MiB | 0.1268 | 1,588 | 77.9% | 954 | 1,591 | 1.66x | 1.00x |
+| 8192x11008 | float16 | 516 MiB | 0.3139 | 1,724 | 84.5% | 1,020 | 1,722 | 1.69x | 1.00x |
+| 8192x13824 | float16 | 648 MiB | 0.3917 | 1,735 | 85.1% | 1,028 | 1,732 | 1.69x | 1.00x |
+| 8192x28672 | float16 | 1,344 MiB | 0.7968 | 1,769 | 86.7% | 1,041 | 1,769 | 1.70x | 1.00x |
+| 8192x4096 | bfloat16 | 192 MiB | 0.1257 | 1,602 | 78.6% | 962 | 1,603 | 1.67x | 1.00x |
+| 8192x11008 | bfloat16 | 516 MiB | 0.3132 | 1,727 | 84.7% | 1,021 | 1,724 | 1.69x | 1.00x |
+| 8192x13824 | bfloat16 | 648 MiB | 0.3918 | 1,734 | 85.1% | 1,029 | 1,734 | 1.69x | 1.00x |
+| 8192x28672 | bfloat16 | 1,344 MiB | 0.7986 | 1,765 | 86.5% | 1,042 | 1,766 | 1.69x | 1.00x |
 <!-- RESULTS:END -->
 
 ## 6. Lesson learned

@@ -3,19 +3,52 @@
 > Fused Triton GPU kernels for LLaMA-family inference, plus a CUDA C++ port of one of them.
 
 <!-- STATUS:START -->
-**Status:** 🚧 Written and reviewed, **not yet validated on a GPU.** Every kernel, test and benchmark in this repo was authored on a machine without an NVIDIA GPU; the first A100 run is what turns the roadmap boxes below from `[ ]` to `[x]` and fills the results table. See [Roadmap](#roadmap).
+**Status:** validated on NVIDIA A100-SXM4-80GB on 2026-11-07: every kernel's tests passed on that GPU, and its measured numbers are in the tables below. The code was written on a machine without an NVIDIA GPU; every measured number in this README comes from `scripts/run_a100.sh`. See [Roadmap](#roadmap).
 <!-- STATUS:END -->
 
-`triton-inference-kit` is a Python library of hand-written [Triton](https://triton-lang.org/) kernels for the memory-bound operations around the matmuls in a LLaMA-style transformer: RMSNorm, SwiGLU, rotary position embedding (RoPE) and online softmax. RMSNorm is also ported to CUDA C++ (`float4` loads, warp-shuffle reduction) with a walkthrough written for interview prep. Every kernel has a PyTorch reference, tests and a benchmark harness, <!-- VALIDATION:START -->with GPU validation in progress<!-- VALIDATION:END -->. An end-to-end test swaps the kernels into a HuggingFace LLaMA model and checks its logits against the unpatched model. Design decisions, including the ones that turned out to be wrong, are logged in [`DECISIONS.md`](DECISIONS.md).
+`triton-inference-kit` is a Python library of hand-written [Triton](https://triton-lang.org/) kernels for the memory-bound operations around the matmuls in a LLaMA-style transformer: RMSNorm, SwiGLU, rotary position embedding (RoPE) and online softmax. RMSNorm is also ported to CUDA C++ (`float4` loads, warp-shuffle reduction) with a walkthrough written for interview prep. Every kernel has a PyTorch reference, tests and a benchmark harness, <!-- VALIDATION:START -->validated on NVIDIA A100-SXM4-80GB (2026-11-07)<!-- VALIDATION:END -->. An end-to-end test swaps the kernels into a HuggingFace LLaMA model and checks its logits against the unpatched model. Design decisions, including the ones that turned out to be wrong, are logged in [`DECISIONS.md`](DECISIONS.md).
 
 ## Why this exists
 
-PyTorch ships general-purpose kernels that handle every shape and dtype. For LLM inference that generality leaves bandwidth on the table: most non-matmul ops are memory-bound, and PyTorch's unfused defaults move tensors through HBM several times when one pass would do. Production inference stacks (vLLM, SGLang, TensorRT-LLM) fuse these ops by hand. This repo is a readable, testable version of that work, <!-- E2E-BENCH:START -->with end-to-end benchmarks after the A100 run<!-- E2E-BENCH:END -->.
+PyTorch ships general-purpose kernels that handle every shape and dtype. For LLM inference that generality leaves bandwidth on the table: most non-matmul ops are memory-bound, and PyTorch's unfused defaults move tensors through HBM several times when one pass would do. Production inference stacks (vLLM, SGLang, TensorRT-LLM) fuse these ops by hand. This repo is a readable, testable version of that work, <!-- E2E-BENCH:START -->with end-to-end benchmarks in [Results](#results)<!-- E2E-BENCH:END -->.
 
 ## Results
 
 <!-- RESULTS:START -->
-_pending A100 run. `scripts/run_a100.sh` runs every test and benchmark and fills this table (and the per-kernel tables in `docs/`) from `benchmarks/results/<gpu>_<date>.json` via `scripts/update_docs.py`. No number in these tables is typed by hand._
+**NVIDIA A100-SXM4-80GB** · driver 595.91.07 · CUDA 12.8 · torch 2.8.0+cu128 · triton 3.4.0 · 2026-11-07 · peak 2039 GB/s (device attributes: 2 x mem_clock_rate x mem_bus_width)
+
+One row per kernel and dtype (the largest shape benchmarked). `do_bench` median, L2 flushed before every timed call, bytes counted as the fused op's minimum HBM traffic for every column. Full tables per kernel are in `docs/`.
+
+| kernel | shape | dtype | Triton GB/s | % peak | vs eager | vs torch native | vs torch.compile | CUDA C++ GB/s |
+|---|---|---|---|---|---|---|---|---|
+| rmsnorm | M=16384 N=8192 | float16 | 1,693 | 83.0% | 8.48x | 11.07x | 0.98x | 1,674 |
+| rmsnorm | M=16384 N=8192 | bfloat16 | 1,692 | 83.0% | 8.52x | 11.15x | 0.98x | 1,674 |
+| swiglu | 8192x28672 | float16 | 1,769 | 86.7% | 1.70x | n/a | 1.00x |  |
+| swiglu | 8192x28672 | bfloat16 | 1,765 | 86.5% | 1.69x | n/a | 1.00x |  |
+| rope | LLaMA-3 8B GQA B=8 S=2048 | float16 | 489 | 24.0% | 2.58x | n/a | 0.30x |  |
+| rope | LLaMA-3 8B GQA B=8 S=2048 | bfloat16 | 484 | 23.8% | 2.57x | n/a | 0.30x |  |
+| softmax | M=4096 N=32768 | float16 | 1,073 | 52.6% | 3.68x | 0.91x | 0.81x |  |
+| softmax | M=4096 N=32768 | bfloat16 | 1,072 | 52.6% | 3.69x | 0.92x | 0.82x |  |
+| vector_add | n=2^26 | float16 | 1,696 | 83.2% | 1.00x | n/a | 1.00x |  |
+| vector_add | n=2^26 | bfloat16 | 1,701 | 83.4% | 1.00x | n/a | 1.00x |  |
+
+End-to-end correctness (`tests/test_e2e_llama.py`): logits of the model with all four kernels swapped in vs the stock model, float16, eager attention. **NVIDIA A100-SXM4-80GB** · 2026-11-07 · torch 2.8.0+cu128 · triton 3.4.0 · transformers 5.22.2.
+
+| model | RMSNorm | tokens | max abs logit diff | max abs logit | atol | rtol | within tolerance |
+|---|---|---|---|---|---|---|---|
+| random-init LlamaConfig | triton | 2x256 | 3.30e-03 | 2.23 | 0.02 | 0.02 | yes |
+| random-init LlamaConfig | cuda | 2x256 | 3.17e-03 | 2.23 | 0.02 | 0.02 | yes |
+
+End to end: HF `generate`, greedy, default SDPA attention (RMSNorm, SwiGLU and RoPE swapped); decode rate is (new tokens - 1) / (generate time - prefill time), median of 5 runs. transformers 5.22.2.
+
+| model | dtype | batch | prompt | new tokens | variant | prefill tok/s | decode tok/s | prefill vs stock | decode vs stock |
+|---|---|---|---|---|---|---|---|---|---|
+| TinyLlama/TinyLlama-1.1B-Chat-v1.0 | float16 | 1 | 512 | 128 | stock | 27,260.5 | 56.2 | 1.000x | 1.000x |
+| TinyLlama/TinyLlama-1.1B-Chat-v1.0 | float16 | 1 | 512 | 128 | patched (rmsnorm=triton) | 28,830.9 | 61.3 | 1.058x | 1.090x |
+| TinyLlama/TinyLlama-1.1B-Chat-v1.0 | float16 | 1 | 512 | 128 | patched (rmsnorm=cuda) | 31,984.5 | 68.9 | 1.173x | 1.225x |
+| TinyLlama/TinyLlama-1.1B-Chat-v1.0 | bfloat16 | 1 | 512 | 128 | stock | 27,852.8 | 56.6 | 1.000x | 1.000x |
+| TinyLlama/TinyLlama-1.1B-Chat-v1.0 | bfloat16 | 1 | 512 | 128 | patched (rmsnorm=triton) | 29,207.9 | 61.6 | 1.049x | 1.089x |
+| TinyLlama/TinyLlama-1.1B-Chat-v1.0 | bfloat16 | 1 | 512 | 128 | patched (rmsnorm=cuda) | 32,569.5 | 68.6 | 1.169x | 1.212x |
 <!-- RESULTS:END -->
 
 ## Roadmap
@@ -23,14 +56,14 @@ _pending A100 run. `scripts/run_a100.sh` runs every test and benchmark and fills
 `scripts/update_docs.py` ticks a box only when that item's tests passed on a real GPU (at least one test ran, none failed or errored) and its results from the same run are in `benchmarks/results/` and the tables above; the scaffolding and roofline boxes are ticked by hand. Everything marked *drafted* exists on disk, compiles syntactically, and has been reviewed, but has not executed on CUDA.
 
 - [x] Package scaffolding + benchmark harness
-- [ ] Vector addition (warm-up kernel, sanity check) — **written; A100 validation pending.** <!-- roadmap:vector_add -->
-- [ ] Fused RMSNorm, Triton — **drafted; A100 validation pending.** [docs/rmsnorm.md](docs/rmsnorm.md) <!-- roadmap:rmsnorm -->
-- [ ] RMSNorm, CUDA C++ port (one block per row, `float4` loads, `__shfl_down_sync` reduction) — **drafted; A100 validation pending.** [docs/cuda_rmsnorm.md](docs/cuda_rmsnorm.md) <!-- roadmap:rmsnorm_cuda -->
-- [ ] Fused SwiGLU — **drafted; A100 validation pending.** [docs/swiglu.md](docs/swiglu.md) <!-- roadmap:swiglu -->
-- [ ] Fused RoPE for Q and K (no QKV matmul; cuBLAS handles that) — **drafted; A100 validation pending.** [docs/rope.md](docs/rope.md) <!-- roadmap:rope -->
-- [ ] Online softmax — **drafted; A100 validation pending.** [docs/softmax.md](docs/softmax.md) <!-- roadmap:softmax -->
-- [ ] Benchmarks with explicit byte counts, detected peak bandwidth and a results JSON per run — **written; first run pending.** [benchmarks/](benchmarks/) <!-- roadmap:benchmarks -->
-- [ ] End-to-end LLaMA test (random-init config; Llama-3.2-1B when `HF_TOKEN` is set) and prefill/decode benchmark — **written; first run pending.** [tests/test_e2e_llama.py](tests/test_e2e_llama.py), [benchmarks/bench_e2e.py](benchmarks/bench_e2e.py) <!-- roadmap:e2e -->
+- [x] Vector addition (warm-up kernel, sanity check) — **validated on NVIDIA A100-SXM4-80GB, 2026-11-07.** <!-- roadmap:vector_add -->
+- [x] Fused RMSNorm, Triton — **validated on NVIDIA A100-SXM4-80GB, 2026-11-07.** [docs/rmsnorm.md](docs/rmsnorm.md) <!-- roadmap:rmsnorm -->
+- [x] RMSNorm, CUDA C++ port (one block per row, `float4` loads, `__shfl_down_sync` reduction) — **validated on NVIDIA A100-SXM4-80GB, 2026-11-07.** [docs/cuda_rmsnorm.md](docs/cuda_rmsnorm.md) <!-- roadmap:rmsnorm_cuda -->
+- [x] Fused SwiGLU — **validated on NVIDIA A100-SXM4-80GB, 2026-11-07.** [docs/swiglu.md](docs/swiglu.md) <!-- roadmap:swiglu -->
+- [x] Fused RoPE for Q and K (no QKV matmul; cuBLAS handles that) — **validated on NVIDIA A100-SXM4-80GB, 2026-11-07.** [docs/rope.md](docs/rope.md) <!-- roadmap:rope -->
+- [x] Online softmax — **validated on NVIDIA A100-SXM4-80GB, 2026-11-07.** [docs/softmax.md](docs/softmax.md) <!-- roadmap:softmax -->
+- [x] Benchmarks with explicit byte counts, detected peak bandwidth and a results JSON per run — **validated on NVIDIA A100-SXM4-80GB, 2026-11-07.** [benchmarks/](benchmarks/) <!-- roadmap:benchmarks -->
+- [x] End-to-end LLaMA test (random-init config; Llama-3.2-1B when `HF_TOKEN` is set) and prefill/decode benchmark — **validated on NVIDIA A100-SXM4-80GB, 2026-11-07.** [tests/test_e2e_llama.py](tests/test_e2e_llama.py), [benchmarks/bench_e2e.py](benchmarks/bench_e2e.py) <!-- roadmap:e2e -->
 - [ ] Roofline write-up with measured numbers — after the first run.
 
 ## Installation

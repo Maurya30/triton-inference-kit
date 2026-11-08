@@ -1,0 +1,30 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /usr/local/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/triton-inference-kit
+configfile: pyproject.toml
+plugins: anyio-4.15.1, platformdirs-4.13.6
+collecting ... collected 19 items
+
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype0-shape0] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype0-shape1] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype0-shape2] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype0-shape3] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype0-shape4] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype1-shape0] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype1-shape1] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype1-shape2] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype1-shape3] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype1-shape4] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype2-shape0] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype2-shape1] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype2-shape2] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype2-shape3] PASSED
+tests/test_swiglu.py::test_swiglu_matches_reference[dtype2-shape4] PASSED
+tests/test_swiglu.py::test_swiglu_preserves_shape_and_dtype PASSED
+tests/test_swiglu.py::test_swiglu_rejects_shape_mismatch PASSED
+tests/test_swiglu.py::test_swiglu_rejects_dtype_mismatch PASSED
+tests/test_swiglu.py::test_swiglu_rejects_cpu_tensors PASSED
+
+- generated xml file: /workspace/triton-inference-kit/benchmarks/results/tests/test_swiglu.xml -
+============================== 19 passed in 2.86s ==============================
