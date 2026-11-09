@@ -1,9 +1,7 @@
 # Fused RMSNorm
 
-> **Status: draft — kernel + tests on disk, no GPU numbers yet.** The design and
-> correctness strategy are documented here. The benchmark results section is
-> deliberately empty until the kernel runs on an A100; stub tables with
-> placeholder numbers would be worse than no table at all.
+> **Status: validated on an NVIDIA A100-SXM4-80GB (2026-11-07).** The tests passed on that GPU, and the
+> benchmark tables below are generated from `benchmarks/results/` by `scripts/update_docs.py`.
 
 RMSNorm is the per-token normalization used by every modern open-weights LLM
 (LLaMA, Mistral, Qwen, Gemma). This kernel fuses the entire operation into one

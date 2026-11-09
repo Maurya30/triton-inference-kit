@@ -1,6 +1,7 @@
 # Online softmax
 
-> **Status: draft — kernel + tests on disk, no GPU numbers yet.**
+> **Status: validated on an NVIDIA A100-SXM4-80GB (2026-11-07).** The tests passed on that GPU, and the
+> benchmark tables below are generated from `benchmarks/results/` by `scripts/update_docs.py`.
 
 Numerically-stable softmax computed with the Milakov & Gimelshein (2018)
 online formulation. Softmax is applied over the last dim of a tensor of

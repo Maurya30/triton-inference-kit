@@ -1,6 +1,7 @@
 # Fused Rotary Position Embedding (RoPE)
 
-> **Status: draft — kernel + tests on disk, no GPU numbers yet.**
+> **Status: validated on an NVIDIA A100-SXM4-80GB (2026-11-07).** The tests passed on that GPU, and the
+> benchmark tables below are generated from `benchmarks/results/` by `scripts/update_docs.py`.
 
 Applies RoPE to the Q and K tensors coming out of the QKV projection, using
 the HuggingFace / LLaMA "rotate_half" convention. The matmul itself is left

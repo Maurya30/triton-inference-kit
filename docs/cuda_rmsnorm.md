@@ -1,7 +1,7 @@
 # CUDA C++ RMSNorm
 
-> **Status: draft, kernel + tests on disk, no GPU numbers yet.** Measured
-> results land in the table at the bottom after the first A100 run.
+> **Status: validated on an NVIDIA A100-SXM4-80GB (2026-11-07).** The tests passed on that GPU, and the
+> benchmark tables below are generated from `benchmarks/results/` by `scripts/update_docs.py`.
 
 A hand-written CUDA C++ port of the Triton RMSNorm kernel. Same math, same
 Python contract (`triton_inference_kit.rmsnorm_cuda(x, weight, eps)`), but

@@ -64,7 +64,7 @@ End to end: HF `generate`, greedy, default SDPA attention (RMSNorm, SwiGLU and R
 - [x] Online softmax — **validated on NVIDIA A100-SXM4-80GB, 2026-11-07.** [docs/softmax.md](docs/softmax.md) <!-- roadmap:softmax -->
 - [x] Benchmarks with explicit byte counts, detected peak bandwidth and a results JSON per run — **validated on NVIDIA A100-SXM4-80GB, 2026-11-07.** [benchmarks/](benchmarks/) <!-- roadmap:benchmarks -->
 - [x] End-to-end LLaMA test (random-init config; Llama-3.2-1B when `HF_TOKEN` is set) and prefill/decode benchmark — **validated on NVIDIA A100-SXM4-80GB, 2026-11-07.** [tests/test_e2e_llama.py](tests/test_e2e_llama.py), [benchmarks/bench_e2e.py](benchmarks/bench_e2e.py) <!-- roadmap:e2e -->
-- [ ] Roofline write-up with measured numbers — after the first run.
+- [ ] Roofline write-up with measured numbers — not written yet.
 
 ## Installation
 

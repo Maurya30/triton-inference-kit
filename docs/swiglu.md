@@ -1,6 +1,7 @@
 # Fused SwiGLU
 
-> **Status: draft — kernel + tests on disk, no GPU numbers yet.**
+> **Status: validated on an NVIDIA A100-SXM4-80GB (2026-11-07).** The tests passed on that GPU, and the
+> benchmark tables below are generated from `benchmarks/results/` by `scripts/update_docs.py`.
 
 SwiGLU is the gated FFN activation used by LLaMA, Mistral, Qwen, and Gemma.
 In a transformer FFN block:
